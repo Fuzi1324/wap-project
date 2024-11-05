@@ -8,12 +8,7 @@ export default function LoginPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     try{
-      const response = await fetch('http://localhost:3000/api/login', {
-        method: 'POST',
-        headers:{'Content-Type': 'application/json'},
-        body: JSON.stringify({email, password})
-      });
-
+      const response = await fetch('/api/login');
       const data = await response.json();
       console.log(data);
     }
@@ -26,10 +21,10 @@ export default function LoginPage() {
     <>
     <div className="login-page">
       <div className="form">
-        <form className="login-form" onSubmit={handleSubmit}>
+        <form className="login-form">
           <input type="text" placeholder="email" onChange={e => setEmail(e.target.value)}/>
           <input type="password" placeholder="password" onChange={e => setPassword(e.target.value)}/>
-          <button>login</button>
+          <button onClick={() => handleSubmit()}>login</button>
           <p className="message">Not registered? <Link to="/register">Create an account</Link></p>
         </form>
       </div>

@@ -18,6 +18,14 @@ function App() {
           </ul>
         </div>
       </div>
+
+      <div>
+        <button onClick={async () => {
+          const result = await fetch('/api/user');
+          const data = await result.json();
+          console.log(data);
+        }}>Get Data</button>
+      </div>
     </>
   )
 }

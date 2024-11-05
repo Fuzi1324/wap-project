@@ -9,11 +9,7 @@ export default function LoginPage() {
     const handleSubmit = async (event) => {
       event.preventDefault();
       try{
-        const response = await fetch('http://localhost:3000/api/register', {
-          method: 'POST',
-          headers:{'Content-Type': 'application/json'},
-          body: JSON.stringify({username, email, password})
-        });
+        const response = await fetch('/api/register');
   
         const data = await response.json();
         console.log(data);
@@ -27,11 +23,11 @@ export default function LoginPage() {
     <>
     <div className="register-page">
       <div className="form">
-      <form className="register-form" onSubmit={handleSubmit}>
+      <form className="register-form">
           <input type="text" placeholder="name" onChange={e => setUsername(e.target.value)} />
           <input type="text" placeholder="email address" onChange={e => setEmail(e.target.value)} />
           <input type="password" placeholder="password" onChange={e => setPassword(e.target.value)} />
-          <button>create</button>
+          <button onClick={() => handleSubmit()}>create</button>
           <p className="message">Already registered? <Link to="/login">Sign In</Link></p>
         </form>
       </div>
