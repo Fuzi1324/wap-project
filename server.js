@@ -1,14 +1,32 @@
 import express from 'express';
+import { MongoClient } from 'mongodb';
+import 'dotenv/config';
+import api from './api.js';
 
 const app = express();
 const port = 3000;
 
+const connectionString = process.env.DB_CONNECTION_STRING;
+
 app.use(express.json());
 
-// Serverstart
-app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`);
-});
+app.use('/api', api);
+
+try {
+    const client = new MongoClient(connectionString);
+    await client.connect();
+
+    const db = client.db('demo');
+    app.set('db', db);
+
+    // Serverstart
+    app.listen(port, () => {
+        console.log(`Example app listening on port ${port}`);
+    });
+} catch (error) {
+    console.error(error);
+}
+
 
 //Middleware-Logger
 app.use((req, res, next) => {
@@ -18,16 +36,7 @@ app.use((req, res, next) => {
 
 //CORS - Cross-Origin Resource Sharing (Protokoll für Cross-Site-Request-Forgery)
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    
-    // Handle OPTIONS request
-    if (req.method === 'OPTIONS') {
-        res.sendStatus(200);
-    } else {
-        next();
-    }
+
 });
 
 //Root Pfad
