@@ -8,7 +8,7 @@ function App() {
   return (
     <>
       <div>
-        <img src={Logo} className="logo" alt="Vite logo" />
+      <Link to="/"><img src={Logo} className="logo" alt="Vite logo" /></Link>
         <div>
           <ul>
           <li><Link to="/login">Login</Link></li>
