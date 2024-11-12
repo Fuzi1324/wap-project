@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import EmployeeList from '../components/EmployeeList';
 import GeneralConfig from '../components/GeneralConfig';
 import ScheduleDisplay from '../components/ScheduleDisplay';
+import Navigation from '../components/Navigation';
 
 function AdminPage() {
   const [users, setUsers] = useState([]);
@@ -124,11 +125,13 @@ function AdminPage() {
   };
 
   return (
+    <>
+    <Navigation />
     <div>
       <h2>Admin-Konfiguration</h2>
       <EmployeeList 
         users={users} 
-        onWeeklyHoursChange={handleWeeklyHoursChange} 
+        onWeeklyHoursChange={handleWeeklyHoursChange}
         onSaveWeeklyHours={saveWeeklyHours} 
         onVacationWeeksChange={handleVacationWeeksChange}
         onSaveVacationWeeks={saveVacationWeeks}
@@ -150,6 +153,7 @@ function AdminPage() {
         onScheduleSelect={handleScheduleSelect}
       />
     </div>
+    </>
   );
 }
 

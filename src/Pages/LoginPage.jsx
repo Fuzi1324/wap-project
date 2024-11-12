@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import Navigation from '../components/Navigation'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -19,6 +20,7 @@ export default function LoginPage() {
 
   return (
     <>
+    <Navigation />
     <div className="login-page">
       <div className="form">
         <form className="login-form">

@@ -3,6 +3,19 @@ import { ObjectId } from 'mongodb';
 
 const router = express.Router();
 
+async function writeAccess(req, res, next) {
+  const db = req.app.get('db');
+  // in authenticated middlewares (after `oauth.authenticate()`)
+  // you will find the token in `res.locals.oauth.token`
+  const user = await db.collection('user').findOne({ _id: res.locals?.oauth?.token?.user?.user_id });
+  if (user?.permissions?.write) {
+    res.locals.user = user; // we store a reference to the user object in `res.locals` for later use
+    next();
+  } else {
+    res.status(403).send();
+  }
+}
+
 // ************** USER ROUTES **************
 
 router.get('/user', async (req, res) => {
@@ -101,6 +114,7 @@ router.delete('/user/:id', async (req, res) => {
 });
 
 // ************* ROUTES FOR USER-TIME-MANAGEMENT **************
+
 router.put('/user/:id/weeklyHours', async (req, res) => {
   try {
     const db = req.app.get('db');
@@ -164,9 +178,11 @@ router.put('/user/:id/vacation-dates', async (req, res) => {
   }
 });
 
-
-
 // ************** ADMIN ROUTES **************
+
+router.get('/admin', (req, res) => {
+  res.send('Admin');
+});
 
 router.post('/generate-schedule', async (req, res) => {
   const { workStartTime, workEndTime, workDays, users } = req.body;
@@ -252,6 +268,28 @@ router.get('/all-schedules', async (req, res) => {
     console.error('Fehler beim Abrufen der Dienstpläne:', error);
     res.status(500).json({ error: 'Fehler beim Abrufen der Dienstpläne' });
   }
+});
+
+// ************** Login and Register **************
+router.post('/login', (req, res) => {
+  const { email, password } = req.body;
+  console.log('Empfangene Login-Daten:', email, password);
+  res.json({ message: 'Loginversuch empfangen', status: 'success' });
+});
+
+router.get('/login/:value', (req, res, next) => {
+  if (req.params.value === 'elias') {
+      next();
+  } else {
+      res.status(403).send();
+  }
+}, (req, res) => {
+  res.send('Success!');
+});
+
+// ************** Errors **************
+router.use((req, res) => {
+  res.status(404).send('404: Page not found');
 });
 
 
