@@ -3,7 +3,9 @@ import EmployeeList from '../components/EmployeeList';
 import GeneralConfig from '../components/GeneralConfig';
 import ScheduleDisplay from '../components/ScheduleDisplay';
 import Navigation from '../components/Navigation';
+import { Layout, Button, Typography, Space, Divider, Row, Col, message, Card } from 'antd';
 
+const { Title } = Typography;
 function AdminPage() {
   const [users, setUsers] = useState([]);
   const [workStartTime, setWorkStartTime] = useState('09:00');
@@ -12,7 +14,6 @@ function AdminPage() {
   const [schedules, setSchedules] = useState([]);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
 
-  // Fetch users and latest schedule on component mount
   useEffect(() => {
     fetchUsers();
     fetchSchedules();
@@ -41,7 +42,6 @@ function AdminPage() {
       setSchedules(data);
       if (data.length > 0) {
         setSelectedSchedule(data[0]);
-        // Update configuration from the latest schedule
         const latestSchedule = data[0];
         setWorkStartTime(latestSchedule.workStartTime || '09:00');
         setWorkEndTime(latestSchedule.workEndTime || '17:00');
@@ -111,8 +111,6 @@ function AdminPage() {
         body: JSON.stringify({ workStartTime, workEndTime, workDays, users })
       });
       const data = await response.json();
-      
-      // Fetch updated schedules after generating a new one
       await fetchSchedules();
     } catch (error) {
       console.error('Error generating schedule:', error);
@@ -125,35 +123,49 @@ function AdminPage() {
   };
 
   return (
-    <>
-    <Navigation />
-    <div>
-      <h2>Admin-Konfiguration</h2>
-      <EmployeeList 
-        users={users} 
-        onWeeklyHoursChange={handleWeeklyHoursChange}
-        onSaveWeeklyHours={saveWeeklyHours} 
-        onVacationWeeksChange={handleVacationWeeksChange}
-        onSaveVacationWeeks={saveVacationWeeks}
-        onVacationDatesChange={handleVacationDatesChange}
-        onSaveVacationDates={saveVacationDates}
-      />
-      <GeneralConfig
-        workStartTime={workStartTime}
-        setWorkStartTime={setWorkStartTime}
-        workEndTime={workEndTime}
-        setWorkEndTime={setWorkEndTime}
-        workDays={workDays}
-        setWorkDays={setWorkDays}
-      />
-      <button onClick={handleGenerateSchedule}>Dienstplan generieren</button>
-      <ScheduleDisplay 
-        schedules={schedules}
-        selectedSchedule={selectedSchedule}
-        onScheduleSelect={handleScheduleSelect}
-      />
-    </div>
-    </>
+    <Layout style={{ minHeight: '100vh' }}>
+      <Navigation />
+      <Layout.Content style={{ padding: '20px' }}>
+        <Card>
+          <Title level={2}>Admin-Konfiguration</Title>
+
+          <EmployeeList 
+            users={users} 
+            onWeeklyHoursChange={handleWeeklyHoursChange}
+            onSaveWeeklyHours={saveWeeklyHours} 
+            onVacationWeeksChange={handleVacationWeeksChange}
+            onSaveVacationWeeks={saveVacationWeeks}
+            onVacationDatesChange={handleVacationDatesChange}
+            onSaveVacationDates={saveVacationDates}
+          />
+
+          <Divider />
+
+          <GeneralConfig
+            workStartTime={workStartTime}
+            setWorkStartTime={setWorkStartTime}
+            workEndTime={workEndTime}
+            setWorkEndTime={setWorkEndTime}
+            workDays={workDays}
+            setWorkDays={setWorkDays}
+          />
+
+          <Space style={{ margin: '20px 0' }}>
+            <Button type="primary" onClick={handleGenerateSchedule}>
+              Dienstplan generieren
+            </Button>
+          </Space>
+
+          <Divider />
+
+          <ScheduleDisplay 
+            schedules={schedules}
+            selectedSchedule={selectedSchedule}
+            onScheduleSelect={handleScheduleSelect}
+          />
+        </Card>
+      </Layout.Content>
+    </Layout>
   );
 }
 
