@@ -11,14 +11,21 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@apollo/client": "^3.11.10",
+    "@graphql-tools/graphql-file-loader": "^8.0.3",
+    "@graphql-tools/load": "^8.0.4",
     "bcrypt": "^5.1.1",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
     "express-oauth-server": "^2.0.0",
+    "graphql": "^16.9.0",
+    "graphql-http": "^1.22.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.27.0",
-    "uuid": "^11.0.3"
+    "ruru": "^2.0.0-beta.13",
+    "uuid": "^11.0.3",
+    "vite-plugin-graphql-loader": "^4.0.4"
   },
   "devDependencies": {
     "@ant-design/icons": "^5.5.1",
