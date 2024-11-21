@@ -7,6 +7,13 @@ const router = express.Router();
 router.post('/', async (req, res) => {
   try {
     const db = req.app.get('db');
+    
+    // Überprüfe zuerst, ob die E-Mail bereits existiert
+    const existingUser = await db.collection('user_auth').findOne({ username: req.body.email });
+    if (existingUser) {
+      return res.status(409).json({ message: 'Email already exists' });
+    }
+
     const insertion = await db.collection('user_auth').insertOne({ username: req.body.email });
     if (insertion.acknowledged) {
       const token = v4();

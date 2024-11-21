@@ -7,7 +7,7 @@ async function writeAccess(req, res, next) {
   const db = req.app.get('db');
   // in authenticated middlewares (after `oauth.authenticate()`)
   // you will find the token in `res.locals.oauth.token`
-  const user = await db.collection('user').findOne({ _id: res.locals?.oauth?.token?.user?.user_id });
+  const user = await db.collection('user').findOne({ _id: new ObjectId(res.locals?.oauth?.token?.user?.user_id) });
   if (user?.permissions?.write) {
     res.locals.user = user; // we store a reference to the user object in `res.locals` for later use
     next();
@@ -18,99 +18,114 @@ async function writeAccess(req, res, next) {
 
 // ************** USER ROUTES **************
 
-router.get('/user', async (req, res) => {
-    try {
-      const db = req.app.get('db');
-      const users = await db.collection('users').find({}).toArray();
-  
-      res.json(users);
-    } catch(err) {
-      console.error(err);
-      res.status(500).send();
+router.get('/user/me', async (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const userId = res.locals.oauth.token.user.user_id;
+    
+    if (!userId || !ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
     }
+
+    const objectId = new ObjectId(userId);
+    const user = await db.collection('user').findOne({ _id: objectId });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get email from user_auth collection
+    const userAuth = await db.collection('user_auth').findOne({ user_id: objectId });
+
+    // Combine user data
+    const userData = {
+      ...user,
+      username: userAuth?.username
+    };
+
+    res.json(userData);
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 });
 
-router.post('/user', async (req, res) => {
-    try {
-      const db = req.app.get('db');
-      const insertion = await db.collection('users').insertOne(req.body);
-      if (insertion.acknowledged) {
-        const user = await db.collection('users')
-          .findOne({ _id: insertion.insertedId });
-  
-        if (user) {
-          res.status(201).json(user);
-        } else {
-          res.status(404).send();
-        }
-      } else {
-        res.status(500).send();
-      }
-    } catch(err) {
-      console.error(err);
-      res.status(500).send();
+router.get('/user/:id', writeAccess, async (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { id } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid user ID format' });
     }
+
+    const user = await db.collection('user').findOne({ _id: new ObjectId(id) });
+
+    if (user) {
+      res.json(user);
+    } else {
+      res.status(404).send();
+    }
+  } catch(err) {
+    console.error(err);
+    res.status(500).send();
+  }
 });
-  
-router.get('/user/:id', async (req, res) => {
-    try {
-      const db = req.app.get('db');
-      const user = await db.collection('users').findOne({ _id: new ObjectId(req.params.id) });
-  
+
+router.put('/user/:id', writeAccess, async (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { id } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid user ID format' });
+    }
+
+    const updateData = req.body;
+    delete updateData._id;
+
+    const updated = await db.collection('user')
+      .updateOne({ _id: new ObjectId(id) }, { $set: updateData });
+
+    if (updated.modifiedCount === 1) {
+      const user = await db.collection('user')
+        .findOne({ _id: new ObjectId(id) });
+
       if (user) {
         res.json(user);
       } else {
         res.status(404).send();
       }
-    } catch(err) {
-      console.error(err);
-      res.status(500).send();
+    } else {
+      res.status(404).send();
     }
+  } catch(err) {
+    console.error(err);
+    res.status(500).send();
+  }
 });
 
-router.put('/user/:id', async (req, res) => {
-    try {
-      const db = req.app.get('db');
-  
-      const updateData = req.body;
-      delete updateData._id;
-  
-      const updated = await db.collection('users')
-        .updateOne({ _id: new ObjectId(req.params.id) }, { $set: updateData });
-  
-      if (updated.modifiedCount === 1) {
-        const toDo = await db.collection('users')
-          .findOne({ _id: new ObjectId(req.params.id) });
-  
-        if (toDo) {
-          res.json(toDo);
-        } else {
-          res.status(404).send();
-        }
-      } else {
-        res.status(404).send();
-      }
-    } catch(err) {
-      console.error(err);
-      res.status(500).send();
-    }
-});
+router.delete('/user/:id', writeAccess, async (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { id } = req.params;
 
-router.delete('/user/:id', async (req, res) => {
-    try {
-      const db = req.app.get('db');
-      const deleted = await db.collection('users')
-        .deleteOne({ _id: new ObjectId(req.params.id) });
-  
-      if (deleted.deletedCount === 1) {
-        res.send();
-      } else {
-        res.status(404).send();
-      }
-    } catch(err) {
-      console.error(err);
-      res.status(500).send();
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid user ID format' });
     }
+
+    const deleted = await db.collection('user')
+      .deleteOne({ _id: new ObjectId(id) });
+
+    if (deleted.deletedCount === 1) {
+      res.send();
+    } else {
+      res.status(404).send();
+    }
+  } catch(err) {
+    console.error(err);
+    res.status(500).send();
+  }
 });
 
 // ************* ROUTES FOR USER-TIME-MANAGEMENT **************
@@ -121,7 +136,7 @@ router.put('/user/:id/weeklyHours', async (req, res) => {
     const { weeklyHours } = req.body;
     const userId = req.params.id;
 
-    const result = await db.collection('users').updateOne(
+    const result = await db.collection('user').updateOne(
       { _id: new ObjectId(userId) },
       { $set: { weeklyHours: parseInt(weeklyHours, 10) } }
     );
@@ -141,7 +156,7 @@ router.put('/user/:id/vacation-weeks', async (req, res) => {
   const { vacationWeeks } = req.body;
   try {
     const db = req.app.get('db');
-    const result = await db.collection('users').updateOne(
+    const result = await db.collection('user').updateOne(
       { _id: new ObjectId(req.params.id) },
       { $set: { vacationWeeks: vacationWeeks } }
     );
@@ -157,12 +172,11 @@ router.put('/user/:id/vacation-weeks', async (req, res) => {
   }
 });
 
-
 router.put('/user/:id/vacation-dates', async (req, res) => {
   const { vacationDates } = req.body;
   try {
     const db = req.app.get('db');
-    const result = await db.collection('users').updateOne(
+    const result = await db.collection('user').updateOne(
       { _id: new ObjectId(req.params.id) },
       { $set: { vacationDates: vacationDates } }
     );
@@ -236,7 +250,26 @@ router.post('/generate-schedule', async (req, res) => {
   }
 });
 
+router.post('/check-email', async (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { email } = req.body;
 
+    // Suche nach der E-Mail in der user_auth Collection
+    const existingUser = await db.collection('user_auth').findOne({ username: email });
+
+    if (existingUser) {
+      // E-Mail existiert bereits
+      res.status(409).json({ message: 'Email already exists' });
+    } else {
+      // E-Mail ist verfügbar
+      res.status(200).json({ message: 'Email is available' });
+    }
+  } catch (error) {
+    console.error('Error checking email:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 router.get('/latest-schedule', async (req, res) => {
   try {
@@ -258,7 +291,6 @@ router.get('/latest-schedule', async (req, res) => {
   }
 });
 
-
 router.get('/all-schedules', async (req, res) => {
   try {
     const db = req.app.get('db');
@@ -271,6 +303,7 @@ router.get('/all-schedules', async (req, res) => {
 });
 
 // ************** Login and Register **************
+
 router.post('/login', (req, res) => {
   const { email, password } = req.body;
   console.log('Empfangene Login-Daten:', email, password);
@@ -288,9 +321,9 @@ router.get('/login/:value', (req, res, next) => {
 });
 
 // ************** Errors **************
+
 router.use((req, res) => {
   res.status(404).send('404: Page not found');
 });
-
 
 export default router;
