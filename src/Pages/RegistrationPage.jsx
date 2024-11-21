@@ -1,7 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Navigation from '../components/Navigation'
-import { Input, Button, Form, Typography, message } from 'antd';
+import { Layout, Form, Input, Button, Typography, message, Space } from 'antd';
+
+const { Content } = Layout;
+const { Title } = Typography;
+
 
 export default function LoginPage() {
     const [username, setUsername] = useState('')
@@ -12,7 +16,7 @@ export default function LoginPage() {
         event.preventDefault();
         try {
             const response = await fetch('/api/register');
-            
+
             const data = await response.json();
             console.log(data);
         }
@@ -24,63 +28,69 @@ export default function LoginPage() {
     return (
         <>
             <Navigation />
-            <div className="register-page">
-                <div className="form" style={{ maxWidth: '400px', margin: 'auto' }}>
-                    <Form 
-                        name="register-form" 
-                        onFinish={handleSubmit} 
-                        layout="vertical"
-                    >
-                        <Form.Item 
-                            label="Name" 
-                            name="username"
-                            rules={[{ required: true, message: 'Please input your name!' }]}
+            <Layout style={{ minHeight: '100vh' }}>
+                <Content style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '50px' }}>
+                    <Space direction="vertical" style={{ width: '100%', maxWidth: '400px' }} size="large">
+                        <Title level={2} style={{ textAlign: 'center' }}>Register</Title>
+                        <Form
+                            name="register-form"
+                            layout="vertical"
+                            onFinish={handleSubmit}
+                            style={{ background: '#fff', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)' }}
                         >
-                            <Input 
-                                type="text" 
-                                placeholder="Name" 
-                                value={username} 
-                                onChange={e => setUsername(e.target.value)} 
-                            />
-                        </Form.Item>
+                            <Form.Item
+                                label="Name"
+                                name="username"
+                                rules={[{ required: true, message: 'Please input your name!' }]}
+                            >
+                                <Input
+                                    type="text"
+                                    placeholder="Name"
+                                    value={username}
+                                    onChange={e => setUsername(e.target.value)}
+                                />
+                            </Form.Item>
 
-                        <Form.Item 
-                            label="Email" 
-                            name="email"
-                            rules={[{ required: true, message: 'Please input your email!' }]}
-                        >
-                            <Input 
-                                type="text" 
-                                placeholder="Email Address" 
-                                value={email} 
-                                onChange={e => setEmail(e.target.value)} 
-                            />
-                        </Form.Item>
+                            <Form.Item
+                                label="Email"
+                                name="email"
+                                rules={[{ required: true, message: 'Please input your email!' }]}
+                            >
+                                <Input
+                                    type="email"
+                                    placeholder="Email Address"
+                                    value={email}
+                                    onChange={e => setEmail(e.target.value)}
+                                />
+                            </Form.Item>
 
-                        <Form.Item 
-                            label="Password" 
-                            name="password"
-                            rules={[{ required: true, message: 'Please input your password!' }]}
-                        >
-                            <Input.Password 
-                                placeholder="Password" 
-                                value={password} 
-                                onChange={e => setPassword(e.target.value)} 
-                            />
-                        </Form.Item>
+                            <Form.Item
+                                label="Password"
+                                name="password"
+                                rules={[{ required: true, message: 'Please input your password!' }]}
+                            >
+                                <Input.Password
+                                    placeholder="Password"
+                                    value={password}
+                                    onChange={e => setPassword(e.target.value)}
+                                />
+                            </Form.Item>
 
-                        <Form.Item>
-                            <Button type="primary" htmlType="submit" block>
-                                Create Account
-                            </Button>
-                        </Form.Item>
-
-                        <Typography.Text className="message">
-                            Already registered? <Link to="/login">Sign In</Link>
-                        </Typography.Text>
-                    </Form>
-                </div>
-            </div>
+                            <Form.Item>
+                                <Button type="primary" htmlType="submit" block>
+                                    Create Account
+                                </Button>
+                            </Form.Item>
+                            
+                            <Form.Item>
+                                <p style={{ textAlign: 'center' }}>
+                                    Already registered? <Link to="/login">Sign In</Link>
+                                </p>
+                            </Form.Item>
+                        </Form>
+                    </Space>
+                </Content>
+            </Layout>
         </>
     )
 }
