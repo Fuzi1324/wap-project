@@ -6,7 +6,7 @@ function EmployeeList({ users, onWeeklyHoursChange, onSaveWeeklyHours, onVacatio
       <h3>Benutzer und wöchentliche Arbeitszeiten</h3>
       {users.map(user => (
         <div key={user._id}>
-          <span>{user.username}</span>
+          <span>{user.first_name} {user.last_name}</span>
           <input
             type="number"
             value={user.weeklyHours || ''}

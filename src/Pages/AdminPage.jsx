@@ -6,6 +6,7 @@ import Navigation from '../components/Navigation';
 import { Layout, Button, Typography, Space, Divider, Row, Col, message, Card } from 'antd';
 
 const { Title } = Typography;
+
 function AdminPage() {
   const [users, setUsers] = useState([]);
   const [workStartTime, setWorkStartTime] = useState('09:00');
@@ -21,7 +22,17 @@ function AdminPage() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('/api/user');
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error('Not logged in');
+        navigate('/login');
+        return;
+      }
+      const res = await fetch('/api/all-users', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
       const data = await res.json();
       const usersWithHours = data.map((user) => ({
         ...user,
@@ -37,7 +48,17 @@ function AdminPage() {
 
   const fetchSchedules = async () => {
     try {
-      const res = await fetch('/api/all-schedules');
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error('Not logged in');
+        navigate('/login');
+        return;
+      }
+      const res = await fetch('/api/all-schedules', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
       const data = await res.json();
       setSchedules(data);
       if (data.length > 0) {
@@ -58,14 +79,23 @@ function AdminPage() {
 
   const saveWeeklyHours = async (userId, weeklyHours) => {
     try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error('Not logged in');
+        navigate('/login');
+        return;
+      }
       await fetch(`/api/user/${userId}/weeklyHours`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        },
         body: JSON.stringify({ weeklyHours })
       });
       console.log(`Weekly hours for user ${userId} updated successfully.`);
     } catch (error) {
       console.error('Error updating weekly hours:', error);
+      message.error('Failed to update weekly hours: ' + error.message);
     }
   };
 
@@ -75,14 +105,23 @@ function AdminPage() {
 
   const saveVacationWeeks = async (userId, vacationWeeks) => {
     try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error('Not logged in');
+        navigate('/login');
+        return;
+      }
       await fetch(`/api/user/${userId}/vacation-weeks`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        },
         body: JSON.stringify({ vacationWeeks })
       });
       console.log(`Vacation weeks for user ${userId} updated successfully.`);
     } catch (error) {
       console.error('Error updating vacation weeks:', error);
+      message.error('Failed to update vacation weeks: ' + error.message);
     }
   };
 
@@ -92,28 +131,49 @@ function AdminPage() {
 
   const saveVacationDates = async (userId, vacationDates) => {
     try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error('Not logged in');
+        navigate('/login');
+        return;
+      }
       await fetch(`/api/user/${userId}/vacation-dates`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        },
         body: JSON.stringify({ vacationDates })
       });
       console.log(`Vacation dates for user ${userId} updated successfully.`);
     } catch (error) {
       console.error('Error updating vacation dates:', error);
+      message.error('Failed to update vacation dates: ' + error.message);
     }
   };
 
   const handleGenerateSchedule = async () => {
     try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error('Not logged in');
+        navigate('/login');
+        return;
+      }
       const response = await fetch('/api/generate-schedule', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        },
         body: JSON.stringify({ workStartTime, workEndTime, workDays, users })
       });
-      const data = await response.json();
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || `HTTP error! status: ${response.status}`);
+      }
       await fetchSchedules();
     } catch (error) {
       console.error('Error generating schedule:', error);
+      message.error('Failed to generate schedule: ' + error.message);
     }
   };
 
