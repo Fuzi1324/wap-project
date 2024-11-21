@@ -125,7 +125,7 @@ function AdminPage() {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Navigation />
-      <Layout.Content style={{ padding: '20px' }}>
+      <Layout.Content>
         <Card>
           <Title level={2}>Admin-Konfiguration</Title>
 
