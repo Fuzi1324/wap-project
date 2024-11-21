@@ -6,7 +6,6 @@ import api from './api.js';
 import register from './register.js';
 import oAuthModel from './oAuthModel.js';
 
-
 const app = express();
 const port = 3000;
 const connectionString = process.env.DB_CONNECTION_STRING;
