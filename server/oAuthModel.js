@@ -8,7 +8,7 @@ const client = {
 export default function oAuthModel(db) {
   return {
     getClient() {
-      return client; // we do not handle multiple clients, thus we always return the hardcoded one
+      return client;
     },
     async getAccessToken(accessToken) {
       const token = await db.collection('token').findOne({ accessToken });

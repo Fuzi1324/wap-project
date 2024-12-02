@@ -12,7 +12,6 @@ import RegistrationPage from './Pages/RegistrationPage.jsx'
 import AdminPage from './Pages/AdminPage.jsx'
 import UserPage from './Pages/UserPage.jsx'
 
-
 const router = createBrowserRouter([
   {
     path: '/',
@@ -39,7 +38,6 @@ const router = createBrowserRouter([
     element: <UserPage />,
   },
 ])
-
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <RouterProvider router={router} />

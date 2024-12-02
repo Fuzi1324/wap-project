@@ -14,7 +14,6 @@ const VacationDatesPicker = ({ initialVacations = [], onSave, maxVacationDays })
   );
   const [currentSelection, setCurrentSelection] = useState(null);
 
-  // Berechne die Gesamtzahl der bereits geplanten Urlaubstage
   const calculateTotalVacationDays = (periods) => {
     return periods.reduce((total, period) => {
       return total + (period.endDate.diff(period.startDate, 'days') + 1);
@@ -37,17 +36,14 @@ const VacationDatesPicker = ({ initialVacations = [], onSave, maxVacationDays })
   const handleAddVacation = () => {
     if (!currentSelection) return;
 
-    // Berechne die Anzahl der Tage für die neue Auswahl
     const newDays = currentSelection.endDate.diff(currentSelection.startDate, 'days') + 1;
     const currentTotalDays = calculateTotalVacationDays(vacationPeriods);
 
-    // Überprüfe, ob das Limit überschritten würde
     if (currentTotalDays + newDays > maxVacationDays) {
       message.error(`Sie können nicht mehr als ${maxVacationDays} Urlaubstage im Jahr einplanen. (${currentTotalDays} bereits geplant)`);
       return;
     }
 
-    // Check for overlapping periods
     const isOverlapping = vacationPeriods.some(period => {
       return !(currentSelection.endDate.isBefore(period.startDate) || 
                currentSelection.startDate.isAfter(period.endDate));
@@ -68,14 +64,12 @@ const VacationDatesPicker = ({ initialVacations = [], onSave, maxVacationDays })
 
   const handleSave = async () => {
     try {
-      // Finale Überprüfung vor dem Speichern
       const totalDays = calculateTotalVacationDays(vacationPeriods);
       if (totalDays > maxVacationDays) {
         message.error(`Die Gesamtzahl der Urlaubstage (${totalDays}) überschreitet das erlaubte Maximum von ${maxVacationDays} Tagen.`);
         return;
       }
 
-      // Convert dayjs objects to ISO string dates
       const formattedVacations = vacationPeriods.map(period => ({
         startDate: period.startDate.format('YYYY-MM-DD'),
         endDate: period.endDate.format('YYYY-MM-DD')
@@ -92,14 +86,12 @@ const VacationDatesPicker = ({ initialVacations = [], onSave, maxVacationDays })
   };
 
   const disabledDate = (current) => {
-    // Disable dates before today and after current year
     return current && (
       current < dayjs().startOf('day') ||
       current > dayjs().endOf('year')
     );
   };
 
-  // Berechne verbleibende Urlaubstage
   const totalVacationDays = calculateTotalVacationDays(vacationPeriods);
   const remainingDays = maxVacationDays - totalVacationDays;
 

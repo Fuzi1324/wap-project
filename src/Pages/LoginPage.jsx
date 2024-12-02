@@ -35,7 +35,6 @@ export default function LoginPage() {
         localStorage.setItem('refreshToken', data.refresh_token);
         message.success('Login successful');
         
-        // Fetch user data to get ID
         const userResponse = await fetch('/api/user/me', {
           headers: {
             'Authorization': `Bearer ${data.access_token}`
