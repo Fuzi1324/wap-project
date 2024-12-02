@@ -5,13 +5,12 @@ const router = express.Router();
 
 // ************** MIDDLEWARES **************
 
-async function writeAccess(req, res, next) {
+async function isAdminMiddleware(req, res, next) {
   const db = req.app.get('db');
   // in authenticated middlewares (after `oauth.authenticate()`)
   // you will find the token in `res.locals.oauth.token`
   const user = await db.collection('user').findOne({ _id: new ObjectId(res.locals?.oauth?.token?.user?.user_id) });
-  if (user?.permissions?.write) {
-    res.locals.user = user; // we store a reference to the user object in `res.locals` for later use
+  if (user?.role === 'admin') {
     next();
   } else {
     res.status(403).send();
@@ -52,7 +51,7 @@ router.get('/user/me', async (req, res) => {
   }
 });
 
-router.get('/user/:id', writeAccess, async (req, res) => {
+router.get('/user/:id', async (req, res) => {
   try {
     const db = req.app.get('db');
     const { id } = req.params;
@@ -74,7 +73,7 @@ router.get('/user/:id', writeAccess, async (req, res) => {
   }
 });
 
-router.put('/user/:id', writeAccess, async (req, res) => {
+router.put('/user/:id', async (req, res) => {
   try {
     const db = req.app.get('db');
     const { id } = req.params;
@@ -107,7 +106,7 @@ router.put('/user/:id', writeAccess, async (req, res) => {
   }
 });
 
-router.delete('/user/:id', writeAccess, async (req, res) => {
+router.delete('/user/:id', async (req, res) => {
   try {
     const db = req.app.get('db');
     const { id } = req.params;
@@ -130,13 +129,19 @@ router.delete('/user/:id', writeAccess, async (req, res) => {
   }
 });
 
-// ************* ROUTES FOR USER-TIME-MANAGEMENT **************
+// ************** ADMIN ROUTES **************
 
+// ************* ROUTES FOR USER-TIME-MANAGEMENT **************
 router.put('/user/:id/weeklyHours', async (req, res) => {
   try {
     const db = req.app.get('db');
+    console.log('Received request body:', req.body);
+    console.log('Weekly hours from request:', req.body.weeklyHours);
     const { weeklyHours } = req.body;
     const userId = req.params.id;
+
+    console.log('Parsed weekly hours:', weeklyHours);
+    console.log('User ID:', userId);
 
     const result = await db.collection('user').updateOne(
       { _id: new ObjectId(userId) },
@@ -194,7 +199,20 @@ router.put('/user/:id/vacation-dates', async (req, res) => {
   }
 });
 
-// ************** ADMIN ROUTES **************
+// *************  **************
+
+// ************* ROUTES FOR ADMIN **************
+
+router.get('/admin', async (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const users = await db.collection('user').find({}).toArray();
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 router.get('/all-users', async (req, res) => {
   try {
@@ -296,16 +314,6 @@ router.post('/login', (req, res) => {
   const { email, password } = req.body;
   console.log('Empfangene Login-Daten:', email, password);
   res.json({ message: 'Loginversuch empfangen', status: 'success' });
-});
-
-router.get('/login/:value', (req, res, next) => {
-  if (req.params.value === 'elias') {
-      next();
-  } else {
-      res.status(403).send();
-  }
-}, (req, res) => {
-  res.send('Success!');
 });
 
 router.post('/check-email', async (req, res) => {

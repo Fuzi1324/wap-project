@@ -27,7 +27,7 @@ async function startServer() {
         const db = client.db('demo');
         app.set('db', db);
 
-        
+
         db.collection('token').createIndex({ accessTokenExpiresAt: 1 }, { expireAfterSeconds: 0 });
         db.collection('token').createIndex({ refreshTokenExpiresAt: 1 }, { expireAfterSeconds: 0 });
         db.collection('token').createIndex({ emailTokenExpiresAt: 1 }, { expireAfterSeconds: 0 });
@@ -49,7 +49,3 @@ async function startServer() {
 }
 
 startServer();
-
-app.get('/', (req, res) => {	
-    res.send('Startseite');
-});

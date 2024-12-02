@@ -4,6 +4,8 @@ import GeneralConfig from '../components/GeneralConfig';
 import ScheduleDisplay from '../components/ScheduleDisplay';
 import Navigation from '../components/Navigation';
 import { Layout, Button, Typography, Space, Divider, Row, Col, message, Card } from 'antd';
+import './AuthPages.css';
+import { useNavigate } from 'react-router-dom';
 
 const { Title } = Typography;
 
@@ -15,10 +17,27 @@ function AdminPage() {
   const [schedules, setSchedules] = useState([]);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
 
+  const navigate = useNavigate();
+
   useEffect(() => {
+    fetchIfLoggedIn();
     fetchUsers();
     fetchSchedules();
-  }, []);
+  }, [navigate]);
+
+  const fetchIfLoggedIn = async () => {
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error('Not logged in');
+        navigate('/login');
+        return;
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      message.error('Error fetching data');
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -85,14 +104,21 @@ function AdminPage() {
         navigate('/login');
         return;
       }
-      await fetch(`/api/user/${userId}/weeklyHours`, {
+      const response = await fetch(`/api/user/${userId}/weeklyHours`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${accessToken}`
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ weeklyHours })
+        body: JSON.stringify({ weeklyHours: Number(weeklyHours) })
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to update weekly hours');
+      }
+
       console.log(`Weekly hours for user ${userId} updated successfully.`);
+      message.success('Weekly hours updated successfully');
     } catch (error) {
       console.error('Error updating weekly hours:', error);
       message.error('Failed to update weekly hours: ' + error.message);
@@ -185,7 +211,7 @@ function AdminPage() {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Navigation />
-      <Layout.Content>
+      <Layout.Content className='auth-form'>
         <Card>
           <Title level={2}>Admin-Konfiguration</Title>
 

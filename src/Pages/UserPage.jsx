@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Navigation from "../components/Navigation";
 import { Layout, Button, Typography, Space, Divider, Row, Col, message, Card } from 'antd';
+import './AuthPages.css';
 
 const { Title, Text } = Typography;
 const { Content } = Layout;
@@ -42,7 +43,6 @@ export default function UserPage() {
         message.error('Error fetching user data');
       }
     };
-
     fetchUserData();
   }, [navigate]);
 
@@ -65,9 +65,9 @@ export default function UserPage() {
       <Layout style={{ minHeight: '80vh' }}>
         <Content style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '50px' }}>
           <Space direction="vertical" style={{ width: '100%', maxWidth: '400px' }} size="large">
-          <Text type="secondary">Willkommen, {userData.first_name}! Zeit zu planen.</Text>
+          <Text type="secondary" strong>Willkommen, {userData.first_name}! Zeit zu planen.</Text>
             <Title level={2}>Profile</Title>
-            <Card style={{ width: '100%', textAlign: 'center' }}>
+            <Card style={{ width: '100%', textAlign: 'center' }} className="auth-card">
               <Space direction="vertical" size="large" style={{ width: '100%' }}>
                 <div>
                   <Title level={3}>{userData.first_name} {userData.last_name}</Title>
@@ -75,18 +75,18 @@ export default function UserPage() {
                 </div>
                 
                 <Divider />
-                
+
                 {userData.role && (
                   <div>
-                    <Text strong>Role:</Text>
-                    <Text> {userData.role}</Text>
+                    <Title level={3}>{userData.role}</Title>
+                    <Text type ="secondary">Role</Text>
                   </div>
                 )}
                 
                 {userData.department && (
                   <div>
-                    <Text strong>Department:</Text>
-                    <Text> {userData.department}</Text>
+                    <Title level={3}>{userData.department}</Title>
+                    <Text type ="secondary">Department</Text>
                   </div>
                 )}
               </Space>

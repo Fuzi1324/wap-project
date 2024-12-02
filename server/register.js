@@ -49,7 +49,7 @@ router.put('/:token', async (req, res) => {
         const insertion = await db.collection('user').insertOne({
           first_name: req.body.first_name,
           last_name: req.body.last_name,
-          permissions: { write: false },
+          role: 'user',
         });
   
         if (insertion.acknowledged) {

@@ -51,3 +51,88 @@
   .ant-layout{
     background: rgb(255, 255, 255)
   }
+
+
+/* Component Styles */
+.employee-list {
+    margin: 20px 0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .employee-list .ant-table {
+    background: white;
+    border-radius: 8px;
+  }
+  
+  .schedule-display {
+    padding: 24px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .general-config {
+    padding: 24px;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .navigation {
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .auth-card {
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .auth-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  }
+  
+  .auth-form {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  /* Common styles */
+  .section-title {
+    margin-bottom: 24px;
+    color: #1890ff;
+  }
+  
+  .card-container {
+    background: white;
+    padding: 24px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 24px;
+  }
+  
+  .button-group {
+    display: flex;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .auth-form {
+      padding: 16px;
+    }
+    
+    .card-container {
+      padding: 16px;
+    }
+    
+    .button-group {
+      flex-direction: column;
+    }
+  }
