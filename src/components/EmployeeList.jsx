@@ -1,8 +1,9 @@
 import React from 'react';
+import '../Pages/AuthPages.css';
 
 function EmployeeList({ users, onWeeklyHoursChange, onSaveWeeklyHours, onVacationWeeksChange, onVacationDatesChange }) {
   return (
-    <div>
+    <div className='employee-list'>
       <h3>Benutzer und wöchentliche Arbeitszeiten</h3>
       {users.map(user => (
         <div key={user._id}>
