@@ -57,55 +57,54 @@ export default function LoginPage() {
   };
 
   return (
-    <>
-      <Layout style={{ minHeight: '80vh' }}>
-        <Content style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <div className="auth-container">
-            <div className="auth-card">
-              <Title level={2} className="auth-title">Login</Title>
-              <Form
-                name="login"
-                className="auth-form"
-                onFinish={handleSubmit}
+    <Layout>
+      <Navigation />
+      <Content style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <div className="auth-container">
+          <div className="auth-card">
+            <Title level={2} className="auth-title">Login</Title>
+            <Form
+              name="login"
+              className="auth-form"
+              onFinish={handleSubmit}
+            >
+              <Form.Item
+                name="email"
+                rules={[{ required: true, message: 'Please input your email!' }]}
               >
-                <Form.Item
-                  name="email"
-                  rules={[{ required: true, message: 'Please input your email!' }]}
-                >
-                  <Input 
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </Form.Item>
+                <Input 
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </Form.Item>
 
-                <Form.Item
-                  name="password"
-                  rules={[{ required: true, message: 'Please input your password!' }]}
-                >
-                  <Input.Password 
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </Form.Item>
-
-                <Form.Item>
-                  <Button type="primary" htmlType="submit" className="auth-button">
-                    Log in
-                  </Button>
-                </Form.Item>
-              </Form>
+              <Form.Item
+                name="password"
+                rules={[{ required: true, message: 'Please input your password!' }]}
+              >
+                <Input.Password 
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </Form.Item>
 
               <Form.Item>
-                <p style={{ textAlign: 'center' }}>
-                  Don't have an account? <Link to="/register">Register now</Link>
-                </p>
+                <Button type="primary" htmlType="submit" className="auth-button">
+                  Login
+                </Button>
               </Form.Item>
-            </div>
+            </Form>
+
+            <Form.Item>
+              <p style={{ textAlign: 'center' }}>
+                Noch nicht registriert? <Link to="/register">Registrieren</Link>
+              </p>
+            </Form.Item>
           </div>
-        </Content>
-      </Layout>
-    </>
+        </div>
+      </Content>
+    </Layout>
   );
 }

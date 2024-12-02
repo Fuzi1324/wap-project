@@ -147,10 +147,10 @@ export default function RegistrationPage() {
     }
 
     return (
-        <>
-            <Layout style={{ minHeight: '80vh' }}>
-            <Content style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '50px' }}>
-                <Space direction="vertical" style={{ width: '100%', maxWidth: '400px' }} size="large">
+        <Layout>
+            <Navigation />
+            <Content style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
+                <Space direction="vertical" size="large">
                 <div className="auth-container">
                     <div className="auth-card">
                         <Title level={2} className='auth-title'>Register</Title>
@@ -193,10 +193,20 @@ export default function RegistrationPage() {
                                 name="register-form-step2"
                                 className='auth-form'
                                 onFinish={handleCompleteRegistration}
+                                autoComplete="off"
                             >
+                                <Input 
+                                    type="email" 
+                                    name="username"
+                                    style={{ display: 'none' }} 
+                                    value={email} 
+                                    autoComplete="username"
+                                    readOnly
+                                />
+                                
                                 <Form.Item
                                     label="Activation Token"
-                                    name="token"
+                                    name="activationToken"
                                     rules={[
                                         { required: true, message: 'Please input the activation token!' },
                                         { 
@@ -209,6 +219,7 @@ export default function RegistrationPage() {
                                         placeholder="Activation Token"
                                         value={activationToken}
                                         onChange={e => setActivationToken(e.target.value)}
+                                        autoComplete="off"
                                     />
                                 </Form.Item>
 
@@ -228,6 +239,7 @@ export default function RegistrationPage() {
                                         placeholder="First Name"
                                         value={firstName}
                                         onChange={e => setFirstName(e.target.value)}
+                                        autoComplete="given-name"
                                     />
                                 </Form.Item>
 
@@ -247,6 +259,7 @@ export default function RegistrationPage() {
                                         placeholder="Last Name"
                                         value={lastName}
                                         onChange={e => setLastName(e.target.value)}
+                                        autoComplete="family-name"
                                     />
                                 </Form.Item>
 
@@ -267,6 +280,7 @@ export default function RegistrationPage() {
                                         placeholder="Password"
                                         value={password}
                                         onChange={e => setPassword(e.target.value)}
+                                        autoComplete="new-password"
                                     />
                                 </Form.Item>
 
@@ -290,12 +304,13 @@ export default function RegistrationPage() {
                                         placeholder="Confirm Password"
                                         value={confirmPassword}
                                         onChange={e => setConfirmPassword(e.target.value)}
+                                        autoComplete="new-password"
                                     />
                                 </Form.Item>
 
                                 <Form.Item>
                                     <Button type="primary" htmlType="submit" block>
-                                        Complete Registration
+                                        Registrierung abschliessen
                                     </Button>
                                 </Form.Item>
                             </Form>
@@ -303,7 +318,7 @@ export default function RegistrationPage() {
                         
                         <Form.Item>
                             <p style={{ textAlign: 'center' }}>
-                                Already registered? <Link to="/login">Sign In</Link>
+                                Bereits registriert? <Link to="/login">Anmelden</Link>
                             </p>
                         </Form.Item>
                     </div>
@@ -311,6 +326,5 @@ export default function RegistrationPage() {
                 </Space>
                 </Content>
             </Layout>
-        </>
     );
 }
