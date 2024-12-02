@@ -81,9 +81,8 @@ export default function Navigation() {
               <Menu.Item key="/admin">
                 <Link to="/admin">Admin</Link>
               </Menu.Item>
-
               <Menu.Item key={`/user/${userId}`}>
-                <Link to={`/user/${userId}`}>Profile</Link>
+                <Link to={`/user/${userId}`}>Profil</Link>
               </Menu.Item>
 
               <Menu.Item key="logout" onClick={handleLogout}>

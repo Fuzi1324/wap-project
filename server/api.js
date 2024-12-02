@@ -199,6 +199,38 @@ router.put('/user/:id/vacation-dates', async (req, res) => {
   }
 });
 
+router.put('/user/:id/vacation-periods', async (req, res) => {
+  const { id } = req.params;
+  const { vacationPeriods } = req.body;
+
+  if (!vacationPeriods || !Array.isArray(vacationPeriods)) {
+    return res.status(400).json({ message: 'Invalid vacation periods data' });
+  }
+
+  try {
+    const db = req.app.get('db');
+    const user = await db.collection('user').findOne({ _id: new ObjectId(id) });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.vacationPeriods = vacationPeriods;
+    const result = await db.collection('user').updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { vacationPeriods: vacationPeriods } }
+    );
+
+    if (result.modifiedCount === 1) {
+      res.status(200).json({ message: 'Vacation periods updated successfully' });
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+  } catch (error) {
+    console.error('Error updating vacation periods:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // *************  **************
 
 // ************* ROUTES FOR ADMIN **************

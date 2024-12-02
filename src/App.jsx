@@ -1,9 +1,13 @@
 import { useState } from 'react'
 import Logo from '/images/Logo.png'
-import { Link } from 'react-router-dom'
+import { Link, Routes, Route } from 'react-router-dom'
 import './App.css'
 import Navigation from './components/Navigation';
 import { Layout, Form, Input, Button, Typography, message, Space } from 'antd';
+import LoginPage from './Pages/LoginPage';
+import RegisterPage from './Pages/RegistrationPage';
+import AdminPage from './Pages/AdminPage';
+import UserPage from './Pages/UserPage';
 
 function App() {
 
@@ -16,6 +20,15 @@ function App() {
         </div>
       </div>
 
+      <div>
+        <Routes>
+          <Route path="/" element={<LoginPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/user/:userId" element={<UserPage />} />
+        </Routes>
+      </div>
       <div>
         <button onClick={async () => {
           const result = await fetch('/api/user');
