@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import Navigation from "../components/Navigation";
 import { Layout, Button, Typography, Space, Divider, Row, Col, message, Card } from 'antd';
 import './AuthPages.css';
+import VacationDatesPicker from '../components/VacationDatesPicker';
 
 const { Title, Text } = Typography;
 const { Content } = Layout;
@@ -45,6 +46,43 @@ export default function UserPage() {
     };
     fetchUserData();
   }, [navigate]);
+
+  const handleSaveVacationDates = async (vacationPeriods) => {
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error('Nicht eingeloggt');
+        navigate('/login');
+        return;
+      }
+
+      const response = await fetch(`/api/user/${userData.id}/vacation-periods`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ vacationPeriods })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        const errorMessage = errorData?.message || `HTTP error! status: ${response.status}`;
+        throw new Error(errorMessage);
+      }
+
+      // Update local state
+      setUserData(prev => ({
+        ...prev,
+        vacationPeriods
+      }));
+      
+      return true; // Indicate success to the VacationDatesPicker
+    } catch (error) {
+      console.error('Error saving vacation dates:', error);
+      throw error; // Re-throw to be handled by the VacationDatesPicker
+    }
+  };
 
   if (!userData) {
     return (
@@ -90,6 +128,12 @@ export default function UserPage() {
                   </div>
                 )}
               </Space>
+            </Card>
+            <Card title="Urlaubsplanung" style={{ width: '100%' }}>
+              <VacationDatesPicker
+                initialVacations={userData.vacationPeriods || []}
+                onSave={handleSaveVacationDates}
+              />
             </Card>
           </Space>
         </Content>

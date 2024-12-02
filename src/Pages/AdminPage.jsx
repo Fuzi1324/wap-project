@@ -137,14 +137,20 @@ function AdminPage() {
         navigate('/login');
         return;
       }
-      await fetch(`/api/user/${userId}/vacation-weeks`, {
+      const response = await fetch(`/api/user/${userId}/vacation-weeks`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${accessToken}`
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ vacationWeeks })
+        body: JSON.stringify({ vacationWeeks: Number(vacationWeeks) })
       });
-      console.log(`Vacation weeks for user ${userId} updated successfully.`);
+
+      if (!response.ok) {
+        throw new Error('Failed to update vacation weeks');
+      }
+
+      message.success('Vacation weeks updated successfully');
     } catch (error) {
       console.error('Error updating vacation weeks:', error);
       message.error('Failed to update vacation weeks: ' + error.message);
@@ -163,14 +169,20 @@ function AdminPage() {
         navigate('/login');
         return;
       }
-      await fetch(`/api/user/${userId}/vacation-dates`, {
+      const response = await fetch(`/api/user/${userId}/vacation-dates`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${accessToken}`
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ vacationDates })
       });
-      console.log(`Vacation dates for user ${userId} updated successfully.`);
+
+      if (!response.ok) {
+        throw new Error('Failed to update vacation dates');
+      }
+
+      message.success('Vacation dates updated successfully');
     } catch (error) {
       console.error('Error updating vacation dates:', error);
       message.error('Failed to update vacation dates: ' + error.message);
