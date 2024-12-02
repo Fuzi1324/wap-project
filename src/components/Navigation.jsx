@@ -12,7 +12,6 @@ export default function Navigation() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    // Get user data when component mounts
     const fetchUserData = async () => {
       try {
         const accessToken = localStorage.getItem('accessToken');

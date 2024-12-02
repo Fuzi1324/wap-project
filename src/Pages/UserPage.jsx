@@ -23,7 +23,6 @@ export default function UserPage() {
           return;
         }
 
-        // Always use /me endpoint for now, as we don't have user viewing permissions yet
         const response = await fetch('/api/user/me', {
           headers: {
             'Authorization': `Bearer ${accessToken}`
@@ -71,16 +70,15 @@ export default function UserPage() {
         throw new Error(errorMessage);
       }
 
-      // Update local state
       setUserData(prev => ({
         ...prev,
         vacationPeriods
       }));
       
-      return true; // Indicate success to the VacationDatesPicker
+      return true;
     } catch (error) {
       console.error('Error saving vacation dates:', error);
-      throw error; // Re-throw to be handled by the VacationDatesPicker
+      throw error;
     }
   };
 

@@ -6,7 +6,6 @@ import { Layout, Form, Input, Button, Typography, message, Space } from 'antd';
 const { Content } = Layout;
 const { Title } = Typography;
 
-// Validierungsfunktionen
 const validatePassword = (password) => {
     const errors = [];
     if (password.length < 8) {
@@ -60,7 +59,7 @@ export default function RegistrationPage() {
             });
             
             const data = await response.json();
-            return response.status === 409; // true wenn die Email bereits existiert (409 Conflict)
+            return response.status === 409;
         } catch (error) {
             console.error('Error checking email:', error);
             return false;
@@ -69,7 +68,6 @@ export default function RegistrationPage() {
 
     const handleInitialRegistration = async () => {
         try {
-            // Überprüfe zuerst, ob die E-Mail bereits existiert
             const emailExists = await checkEmailExists(email);
             if (emailExists) {
                 message.error('This email is already registered');
@@ -99,7 +97,6 @@ export default function RegistrationPage() {
 
     const handleCompleteRegistration = async () => {
         try {
-            // Validiere Namen
             const firstNameErrors = validateName(firstName);
             const lastNameErrors = validateName(lastName);
             
@@ -113,14 +110,12 @@ export default function RegistrationPage() {
                 return;
             }
 
-            // Validiere Passwort
             const passwordErrors = validatePassword(password);
             if (passwordErrors.length > 0) {
                 message.error(passwordErrors[0]);
                 return;
             }
 
-            // Überprüfe Passwort-Übereinstimmung
             if (password !== confirmPassword) {
                 message.error('Passwords do not match');
                 return;
