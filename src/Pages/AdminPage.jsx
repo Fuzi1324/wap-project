@@ -96,7 +96,7 @@ function AdminPage() {
     setUsers(users.map(user => user._id === userId ? { ...user, weeklyHours: parseInt(weeklyHours, 10) } : user));
   };
 
-  const saveWeeklyHours = async (userId, weeklyHours) => {
+  const handleSaveWeeklyHours = async (userId, weeklyHours) => {
     try {
       const accessToken = localStorage.getItem('accessToken');
       if (!accessToken) {
@@ -125,11 +125,48 @@ function AdminPage() {
     }
   };
 
+  const handleVacationDaysChange = (userId, value) => {
+    setUsers(prevUsers =>
+      prevUsers.map(user =>
+        user._id === userId ? { ...user, vacationDays: value } : user
+      )
+    );
+  };
+
+  const handleSaveVacationDays = async (userId, value) => {
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error('Not logged in');
+        navigate('/login');
+        return;
+      }
+
+      const response = await fetch(`/api/user/${userId}/vacation-days`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({ vacationDays: value })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update vacation days');
+      }
+
+      message.success('Urlaubstage erfolgreich aktualisiert');
+    } catch (error) {
+      console.error('Error updating vacation days:', error);
+      message.error('Fehler beim Aktualisieren der Urlaubstage');
+    }
+  };
+
   const handleVacationWeeksChange = (userId, vacationWeeks) => {
     setUsers(users.map(user => user._id === userId ? { ...user, vacationWeeks: parseInt(vacationWeeks, 10) } : user));
   };
 
-  const saveVacationWeeks = async (userId, vacationWeeks) => {
+  const handleSaveVacationWeeks = async (userId, vacationWeeks) => {
     try {
       const accessToken = localStorage.getItem('accessToken');
       if (!accessToken) {
@@ -161,7 +198,7 @@ function AdminPage() {
     setUsers(users.map(user => user._id === userId ? { ...user, vacationDates } : user));
   };
 
-  const saveVacationDates = async (userId, vacationDates) => {
+  const handleSaveVacationDates = async (userId, vacationDates) => {
     try {
       const accessToken = localStorage.getItem('accessToken');
       if (!accessToken) {
@@ -227,14 +264,16 @@ function AdminPage() {
         <Card>
           <Title level={2}>Admin-Konfiguration</Title>
 
-          <EmployeeList 
-            users={users} 
+          <EmployeeList
+            users={users}
             onWeeklyHoursChange={handleWeeklyHoursChange}
-            onSaveWeeklyHours={saveWeeklyHours} 
+            onSaveWeeklyHours={handleSaveWeeklyHours}
+            onVacationDaysChange={handleVacationDaysChange}
+            onSaveVacationDays={handleSaveVacationDays}
             onVacationWeeksChange={handleVacationWeeksChange}
-            onSaveVacationWeeks={saveVacationWeeks}
+            onSaveVacationWeeks={handleSaveVacationWeeks}
             onVacationDatesChange={handleVacationDatesChange}
-            onSaveVacationDates={saveVacationDates}
+            onSaveVacationDates={handleSaveVacationDates}
           />
 
           <Divider />
@@ -256,7 +295,7 @@ function AdminPage() {
 
           <Divider />
 
-          <ScheduleDisplay 
+          <ScheduleDisplay
             schedules={schedules}
             selectedSchedule={selectedSchedule}
             onScheduleSelect={handleScheduleSelect}

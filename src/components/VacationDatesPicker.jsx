@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { DatePicker, Button, message, Space, List } from 'antd';
+import { DatePicker, Button, message, Space, List, Typography } from 'antd';
 import dayjs from 'dayjs';
 
 const { RangePicker } = DatePicker;
+const { Text } = Typography;
 
-const VacationDatesPicker = ({ initialVacations = [], onSave }) => {
+const VacationDatesPicker = ({ initialVacations = [], onSave, maxVacationDays }) => {
   const [vacationPeriods, setVacationPeriods] = useState(
     initialVacations.map(period => ({
       startDate: dayjs(period.startDate),
@@ -12,6 +13,13 @@ const VacationDatesPicker = ({ initialVacations = [], onSave }) => {
     }))
   );
   const [currentSelection, setCurrentSelection] = useState(null);
+
+  // Berechne die Gesamtzahl der bereits geplanten Urlaubstage
+  const calculateTotalVacationDays = (periods) => {
+    return periods.reduce((total, period) => {
+      return total + (period.endDate.diff(period.startDate, 'days') + 1);
+    }, 0);
+  };
 
   const handleDateRangeSelect = (dates) => {
     if (!dates) {
@@ -22,12 +30,22 @@ const VacationDatesPicker = ({ initialVacations = [], onSave }) => {
     const [startDate, endDate] = dates;
     setCurrentSelection({
       startDate,
-      endDate: endDate || startDate // If no end date, use start date
+      endDate: endDate || startDate
     });
   };
 
   const handleAddVacation = () => {
     if (!currentSelection) return;
+
+    // Berechne die Anzahl der Tage für die neue Auswahl
+    const newDays = currentSelection.endDate.diff(currentSelection.startDate, 'days') + 1;
+    const currentTotalDays = calculateTotalVacationDays(vacationPeriods);
+
+    // Überprüfe, ob das Limit überschritten würde
+    if (currentTotalDays + newDays > maxVacationDays) {
+      message.error(`Sie können nicht mehr als ${maxVacationDays} Urlaubstage im Jahr einplanen. (${currentTotalDays} bereits geplant)`);
+      return;
+    }
 
     // Check for overlapping periods
     const isOverlapping = vacationPeriods.some(period => {
@@ -50,6 +68,13 @@ const VacationDatesPicker = ({ initialVacations = [], onSave }) => {
 
   const handleSave = async () => {
     try {
+      // Finale Überprüfung vor dem Speichern
+      const totalDays = calculateTotalVacationDays(vacationPeriods);
+      if (totalDays > maxVacationDays) {
+        message.error(`Die Gesamtzahl der Urlaubstage (${totalDays}) überschreitet das erlaubte Maximum von ${maxVacationDays} Tagen.`);
+        return;
+      }
+
       // Convert dayjs objects to ISO string dates
       const formattedVacations = vacationPeriods.map(period => ({
         startDate: period.startDate.format('YYYY-MM-DD'),
@@ -74,10 +99,19 @@ const VacationDatesPicker = ({ initialVacations = [], onSave }) => {
     );
   };
 
+  // Berechne verbleibende Urlaubstage
+  const totalVacationDays = calculateTotalVacationDays(vacationPeriods);
+  const remainingDays = maxVacationDays - totalVacationDays;
+
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
       <div>
         <h4>Urlaubszeitraum auswählen</h4>
+        <div style={{ marginBottom: 8 }}>
+          <Text type="secondary">
+            Verbleibende Urlaubstage: {remainingDays} von {maxVacationDays}
+          </Text>
+        </div>
         <RangePicker
           value={currentSelection ? [currentSelection.startDate, currentSelection.endDate] : null}
           onChange={handleDateRangeSelect}
