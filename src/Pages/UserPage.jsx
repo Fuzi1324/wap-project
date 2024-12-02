@@ -56,7 +56,7 @@ export default function UserPage() {
         return;
       }
 
-      const response = await fetch(`/api/user/${userData.id}/vacation-periods`, {
+      const response = await fetch(`/api/user/${userData._id}/vacation-periods`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -133,6 +133,7 @@ export default function UserPage() {
               <VacationDatesPicker
                 initialVacations={userData.vacationPeriods || []}
                 onSave={handleSaveVacationDates}
+                maxVacationDays={userData.vacationDays || 25}
               />
             </Card>
           </Space>

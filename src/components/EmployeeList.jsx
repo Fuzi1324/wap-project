@@ -6,8 +6,8 @@ const EmployeeList = ({
   users, 
   onWeeklyHoursChange, 
   onSaveWeeklyHours,
-  onVacationWeeksChange,
-  onSaveVacationWeeks,
+  onVacationDaysChange,
+  onSaveVacationDays,
   onVacationDatesChange,
   onSaveVacationDates 
 }) => {
@@ -24,13 +24,13 @@ const EmployeeList = ({
     }));
   };
 
-  const handleVacationWeeksChange = (userId, value) => {
-    onVacationWeeksChange(userId, value);
+  const handleVacationDaysChange = (userId, value) => {
+    onVacationDaysChange(userId, value);
     setChangedFields(prev => ({
       ...prev,
       [userId]: {
         ...prev[userId],
-        vacationWeeks: true
+        vacationDays: true
       }
     }));
   };
@@ -54,8 +54,8 @@ const EmployeeList = ({
         await onSaveWeeklyHours(user._id, user.weeklyHours);
       }
       
-      if (userChanges.vacationWeeks) {
-        await onSaveVacationWeeks(user._id, user.vacationWeeks);
+      if (userChanges.vacationDays) {
+        await onSaveVacationDays(user._id, user.vacationDays);
       }
       
       if (userChanges.vacationDates) {
@@ -88,16 +88,16 @@ const EmployeeList = ({
                 />
               </div>
               <div>
-                <strong>Urlaubswochen:</strong>
+                <strong>Urlaubstage:</strong>
                 <Input
                   type="number"
-                  value={user.vacationWeeks || 5}
-                  onChange={(e) => handleVacationWeeksChange(user._id, e.target.value)}
+                  value={user.vacationDays || 25}
+                  onChange={(e) => handleVacationDaysChange(user._id, e.target.value)}
                   style={{ width: 100, marginLeft: 8 }}
                 />
               </div>
               <div>
-                <strong>Urlaubstage:</strong>
+                <strong>Geplante Urlaubstage:</strong>
                 {user.vacationPeriods && user.vacationPeriods.length > 0 ? (
                   <List
                     size="small"

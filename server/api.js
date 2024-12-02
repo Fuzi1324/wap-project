@@ -231,11 +231,31 @@ router.put('/user/:id/vacation-periods', async (req, res) => {
   }
 });
 
+router.put('/user/:id/vacation-days', async (req, res) => {
+  const { vacationDays } = req.body;
+  try {
+    const db = req.app.get('db');
+    const result = await db.collection('user').updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: { vacationDays: parseInt(vacationDays, 10) } }
+    );
+
+    if (result.modifiedCount === 1) {
+      res.json({ message: 'Urlaubstage erfolgreich aktualisiert' });
+    } else {
+      res.status(404).json({ error: 'Benutzer nicht gefunden' });
+    }
+  } catch (error) {
+    console.error('Fehler beim Aktualisieren der Urlaubstage:', error);
+    res.status(500).json({ error: 'Fehler beim Aktualisieren der Urlaubstage' });
+  }
+});
+
 // *************  **************
 
 // ************* ROUTES FOR ADMIN **************
 
-router.get('/admin', async (req, res) => {
+router.get('/admin', isAdminMiddleware, async (req, res) => {
   try {
     const db = req.app.get('db');
     const users = await db.collection('user').find({}).toArray();
