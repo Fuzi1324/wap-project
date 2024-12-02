@@ -153,18 +153,18 @@ export default function RegistrationPage() {
 
     return (
         <>
-            <Navigation />
-            <Layout style={{ minHeight: '100vh' }}>
-                <Content style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '50px' }}>
-                    <Space direction="vertical" style={{ width: '100%', maxWidth: '400px' }} size="large">
-                        <Title level={2} style={{ textAlign: 'center' }}>Register</Title>
+            <Layout style={{ minHeight: '80vh' }}>
+            <Content style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '50px' }}>
+                <Space direction="vertical" style={{ width: '100%', maxWidth: '400px' }} size="large">
+                <div className="auth-container">
+                    <div className="auth-card">
+                        <Title level={2} className='auth-title'>Register</Title>
                         {registrationStep === 1 ? (
                             <Form
                                 form={form}
                                 name="register-form-step1"
-                                layout="vertical"
+                                className='auth-form'
                                 onFinish={handleInitialRegistration}
-                                style={{ background: '#fff', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)' }}
                             >
                                 <Form.Item
                                     label="Email"
@@ -196,9 +196,8 @@ export default function RegistrationPage() {
                             <Form
                                 form={form}
                                 name="register-form-step2"
-                                layout="vertical"
+                                className='auth-form'
                                 onFinish={handleCompleteRegistration}
-                                style={{ background: '#fff', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)' }}
                             >
                                 <Form.Item
                                     label="Activation Token"
@@ -312,9 +311,11 @@ export default function RegistrationPage() {
                                 Already registered? <Link to="/login">Sign In</Link>
                             </p>
                         </Form.Item>
-                    </Space>
+                    </div>
+                </div>
+                </Space>
                 </Content>
             </Layout>
         </>
-    )
+    );
 }

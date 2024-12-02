@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import { Layout, Form, Input, Button, Typography, message, Space } from 'antd';
+import './AuthPages.css';
 
 const { Content } = Layout;
 const { Title } = Typography;
@@ -58,46 +59,52 @@ export default function LoginPage() {
 
   return (
     <>
-      <Navigation />
-      <Layout style={{ minHeight: '100vh' }}>
-        <Content style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '50px' }}>
-          <Space direction="vertical" style={{ width: '100%', maxWidth: '400px' }} size="large">
-            <Title level={2} style={{ textAlign: 'center' }}>Login</Title>
-            <Form
-              name="login-form"
-              layout="vertical"
-              onFinish={handleSubmit}
-              style={{ background: '#fff', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)' }}
-            >
-              <Form.Item
-                label="Email"
-                name="email"
-                rules={[
-                  { required: true, message: 'Please input your email!' },
-                  { type: 'email', message: 'Please enter a valid email!' }
-                ]}
+      <Layout style={{ minHeight: '80vh' }}>
+        <Content style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <div className="auth-container">
+            <div className="auth-card">
+              <Title level={2} className="auth-title">Login</Title>
+              <Form
+                name="login"
+                className="auth-form"
+                onFinish={handleSubmit}
               >
-                <Input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
-              </Form.Item>
-              <Form.Item
-                label="Password"
-                name="password"
-                rules={[{ required: true, message: 'Please input your password!' }]}
-              >
-                <Input.Password placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
-              </Form.Item>
-              <Form.Item>
-                <Button type="primary" htmlType="submit" block>
-                  Login
-                </Button>
-              </Form.Item>
+                <Form.Item
+                  name="email"
+                  rules={[{ required: true, message: 'Please input your email!' }]}
+                >
+                  <Input 
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="password"
+                  rules={[{ required: true, message: 'Please input your password!' }]}
+                >
+                  <Input.Password 
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </Form.Item>
+
+                <Form.Item>
+                  <Button type="primary" htmlType="submit" className="auth-button">
+                    Log in
+                  </Button>
+                </Form.Item>
+              </Form>
+
               <Form.Item>
                 <p style={{ textAlign: 'center' }}>
-                  Not registered? <Link to="/register">Create an account</Link>
+                  Don't have an account? <Link to="/register">Register now</Link>
                 </p>
               </Form.Item>
-            </Form>
-          </Space>
+            </div>
+          </div>
         </Content>
       </Layout>
     </>

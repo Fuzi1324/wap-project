@@ -62,9 +62,10 @@ export default function UserPage() {
   return (
     <>
       <Navigation />
-      <Layout style={{ minHeight: '100vh' }}>
+      <Layout style={{ minHeight: '80vh' }}>
         <Content style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '50px' }}>
           <Space direction="vertical" style={{ width: '100%', maxWidth: '400px' }} size="large">
+          <Text type="secondary">Willkommen, {userData.first_name}! Zeit zu planen.</Text>
             <Title level={2}>Profile</Title>
             <Card style={{ width: '100%', textAlign: 'center' }}>
               <Space direction="vertical" size="large" style={{ width: '100%' }}>
