@@ -9,6 +9,7 @@ async function isAdminMiddleware(req, res, next) {
   const db = req.app.get('db');
   const user = await db.collection('user').findOne({ _id: new ObjectId(res.locals?.oauth?.token?.user?.user_id) });
   if (user?.role === 'admin') {
+    req.user = user;
     next();
   } else {
     res.status(403).send();
@@ -47,7 +48,7 @@ router.get('/user/me', async (req, res) => {
 
 // ************** TIME MANAGEMENT ROUTES **************
 
-router.put('/user/:id/weeklyHours', async (req, res) => {
+router.put('/user/:id/weeklyHours', isAdminMiddleware, async (req, res) => {
   try {
     const db = req.app.get('db');
     const { weeklyHours } = req.body;
@@ -93,7 +94,26 @@ router.put('/user/:id/vacation-periods', async (req, res) => {
   }
 });
 
-router.put('/user/:id/vacation-days', async (req, res) => {
+router.delete('/user/:id/vacation-periods', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const db = req.app.get('db');
+    const result = await db.collection('user').updateOne(
+      { _id: new ObjectId(id) },
+      { $unset: { vacationPeriods: '' } }
+    );
+
+    if (result.modifiedCount === 1) {
+      res.status(200).json({ message: 'Urlaubsperioden erfolgreich gelöscht' });
+    } else {
+      res.status(404).json({ error: 'Benutzer nicht gefunden' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Interner Serverfehler' });
+  }
+});
+
+router.put('/user/:id/vacation-days', isAdminMiddleware, async (req, res) => {
   const { vacationDays } = req.body;
   try {
     const db = req.app.get('db');
@@ -124,19 +144,9 @@ router.get('/all-users', async (req, res) => {
   }
 });
 
-router.get('/all-schedules', async (req, res) => {
-  try {
-    const db = req.app.get('db');
-    const schedules = await db.collection('schedules').find({}).sort({ generatedAt: -1 }).toArray();
-    res.json(schedules);
-  } catch (error) {
-    res.status(500).json({ message: 'Interner Serverfehler' });
-  }
-});
-
 // ************** SCHEDULE ROUTES **************
 
-router.post('/generate-schedule', async (req, res) => {
+router.post('/generate-schedule', isAdminMiddleware, async (req, res) => {
   const { workStartTime, workEndTime, workDays, users } = req.body;
 
   try {
@@ -202,6 +212,16 @@ router.get('/latest-schedule', async (req, res) => {
     }
   } catch (error) {
     res.status(500).json({ error: 'Fehler beim Abrufen des letzten Dienstplans' });
+  }
+});
+
+router.get('/all-schedules', async (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const schedules = await db.collection('schedules').find({}).sort({ generatedAt: -1 }).toArray();
+    res.json(schedules);
+  } catch (error) {
+    res.status(500).json({ message: 'Interner Serverfehler' });
   }
 });
 
