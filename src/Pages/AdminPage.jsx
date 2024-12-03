@@ -21,6 +21,7 @@ function AdminPage() {
 
   useEffect(() => {
     fetchIfLoggedIn();
+    fetchIfUserIsAdmin();
     fetchUsers();
     fetchSchedules();
   }, [navigate]);
@@ -32,6 +33,30 @@ function AdminPage() {
         message.error('Not logged in');
         navigate('/login');
         return;
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      message.error('Error fetching data');
+    }
+  };
+
+  const fetchIfUserIsAdmin = async () => {
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error('Not logged in');
+        navigate('/login');
+        return;
+      }
+      const res = await fetch('/api/user/me', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+      const data = await res.json();
+      if (data.role !== 'admin') {
+        message.error('You are not an admin');
+        navigate('/');
       }
     } catch (error) {
       console.error('Error fetching data:', error);
