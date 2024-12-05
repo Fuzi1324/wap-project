@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Navigation from "../components/Navigation";
-import { Layout, Button, Typography, Space, Divider, Row, Col, message, Card } from 'antd';
+import { Layout, Button, Typography, Space, Divider, Row, Col, message, Card, Input, Form } from 'antd';
 import './AuthPages.css';
 import VacationDatesPicker from '../components/VacationDatesPicker';
 
@@ -86,8 +86,8 @@ export default function UserPage() {
     return (
       <>
         <Navigation />
-        <Layout style={{ minHeight: '100vh' }}>
-          <Content style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '50px' }}>
+        <Layout style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+          <Content style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '50px' }}>
             <Text>Loading...</Text>
           </Content>
         </Layout>
@@ -98,43 +98,79 @@ export default function UserPage() {
   return (
     <>
       <Navigation />
-      <Layout style={{ minHeight: '80vh' }}>
-        <Content style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '50px' }}>
-          <Space direction="vertical" style={{ width: '100%', maxWidth: '400px' }} size="large">
-          <Text type="secondary" strong>Willkommen, {userData.first_name}! Zeit zu planen.</Text>
-            <Title level={2}>Profile</Title>
-            <Card style={{ width: '100%', textAlign: 'center' }} className="auth-card">
-              <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                <div>
-                  <Title level={3}>{userData.first_name} {userData.last_name}</Title>
-                  <Text type="secondary">{userData.username}</Text>
-                </div>
-                
-                <Divider />
+      <Layout style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+        <Content style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '50px' }}>
+          <Row gutter={[48, 48]} style={{ maxWidth: '1600px', width: '100%' }}>
+            <Col xs={24} sm={24} md={8} lg={8} style={{ display: 'flex', justifyContent: 'center' }}>
+              <Card title="Profil" style={{ height: '100%' }} className="auth-card">
+                <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                  <div>
+                    <Title level={3}>{userData.first_name} {userData.last_name}</Title>
+                    <Text type="secondary">{userData.username}</Text>
+                  </div>
+                  
+                  <Divider />
 
-                {userData.role && (
+                  {userData.role && (
+                    <div>
+                      <Title level={3}>{userData.role}</Title>
+                      <Text type ="secondary">Role</Text>
+                    </div>
+                  )}
+                  
+                  {userData.department && (
+                    <div>
+                      <Title level={3}>{userData.department}</Title>
+                      <Text type ="secondary">Department</Text>
+                    </div>
+                  )}
+                </Space>
+              </Card>
+            </Col>
+            <Col xs={24} sm={24} md={8} lg={8} style={{ display: 'flex', justifyContent: 'center' }}>
+              <Card title="Organisationen" style={{ height: '100%' }} className="auth-card">
+                <Space direction="vertical" size="large" style={{ width: '100%' }}>
                   <div>
-                    <Title level={3}>{userData.role}</Title>
-                    <Text type ="secondary">Role</Text>
+                    <Form layout="vertical">
+                      <Form.Item>
+                        <Input 
+                          placeholder="Name" 
+                          style={{ marginBottom: '10px' }}
+                        />
+                      </Form.Item>
+                      <Form.Item>
+                        <Input 
+                          placeholder="Adresse"
+                          style={{ marginBottom: '10px' }}
+                        />
+                      </Form.Item>
+                      <Form.Item>
+                        <Button type="primary" style={{ width: '100%' }}>
+                          Erstellen
+                        </Button>
+                      </Form.Item>
+                    </Form>
                   </div>
-                )}
-                
-                {userData.department && (
+
+                  <Divider />
+                  <Text type="secondary">Ihre Organisationen auf einen Blick</Text>
                   <div>
-                    <Title level={3}>{userData.department}</Title>
-                    <Text type ="secondary">Department</Text>
+                    <Title level={3}>Lorem ipsum GmbH</Title>
+                    <Text type="secondary">Lorem Ipsum GmbH</Text>
                   </div>
-                )}
-              </Space>
-            </Card>
-            <Card title="Urlaubsplanung" style={{ width: '100%' }}>
-              <VacationDatesPicker
-                initialVacations={userData.vacationPeriods || []}
-                onSave={handleSaveVacationDates}
-                maxVacationDays={userData.vacationDays || 25}
-              />
-            </Card>
-          </Space>
+                </Space>
+              </Card>
+            </Col>
+            <Col xs={24} sm={24} md={8} lg={8} style={{ display: 'flex', justifyContent: 'center' }}>
+              <Card title="Urlaubsplanung" style={{ height: '100%' }} className="auth-card">
+                <VacationDatesPicker
+                  initialVacations={userData.vacationPeriods || []}
+                  onSave={handleSaveVacationDates}
+                  maxVacationDays={userData.vacationDays || 25}
+                />
+              </Card>
+            </Col>
+          </Row>
         </Content>
       </Layout>
     </>
