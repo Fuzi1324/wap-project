@@ -32,7 +32,7 @@ function HomePage() {
               <Button type="primary">Anmelden</Button>
             </Link>
             <Link to="/register">
-              <Button>Registrieren</Button>
+              <Button type='secondary'>Registrieren</Button>
             </Link>
           </Space>
         </Card>
@@ -43,7 +43,7 @@ function HomePage() {
 
 function App() {
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: '90vh' }}>
       <Navigation />
       <Routes>
         <Route path="/" element={<HomePage />} />

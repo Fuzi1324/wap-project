@@ -12,6 +12,7 @@ export default function UserPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
+  const [form] = Form.useForm();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -51,7 +52,7 @@ export default function UserPage() {
       const accessToken = localStorage.getItem('accessToken');
       if (!accessToken) {
         message.error('Nicht eingeloggt');
-        navigate('/login');
+        navigate('/user:id');
         return;
       }
 
@@ -82,6 +83,49 @@ export default function UserPage() {
     }
   };
 
+  const handleCreateOrganisation = async (values) => {
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error('Nicht eingeloggt');
+        navigate('/login');
+        return;
+      }
+
+      const response = await fetch(`/api/user/${userData._id}/organisation`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organisation: [
+            values.name,
+            values.address
+          ]
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        const errorMessage = errorData?.message || `HTTP error! status: ${response.status}`;
+        message.error(errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      message.success('Organisation erfolgreich erstellt!');
+      setUserData(prev => ({
+        ...prev,
+        organisation: [values.name, values.address]
+      }));
+
+      form.resetFields();
+    } catch (error) {
+      console.error('Error creating organisation:', error);
+      message.error('Fehler beim Erstellen der Organisation: ' + error.message);
+    }
+  };
+
   if (!userData) {
     return (
       <>
@@ -98,7 +142,7 @@ export default function UserPage() {
   return (
     <>
       <Navigation />
-      <Layout style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+      <Layout style={{ minHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
         <Content style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '50px' }}>
           <Row gutter={[48, 48]} style={{ maxWidth: '1600px', width: '100%' }}>
             <Col xs={24} sm={24} md={8} lg={8} style={{ display: 'flex', justifyContent: 'center' }}>
@@ -124,6 +168,18 @@ export default function UserPage() {
                       <Text type ="secondary">Department</Text>
                     </div>
                   )}
+
+                  <Divider />
+                  <div>
+                    {userData.organisation ? (
+                      <>
+                        <Title level={3}>{userData.organisation[0]}</Title>
+                        <Text type="secondary">{userData.organisation[1]}</Text>
+                      </>
+                    ) : (
+                      <Text type="secondary">Sieht so aus als ob Sie noch keiner Organisation beigetreten sind. <br />Jetzt aber schnell!</Text>
+                    )}
+                  </div>
                 </Space>
               </Card>
             </Col>
@@ -131,32 +187,47 @@ export default function UserPage() {
               <Card title="Organisationen" style={{ height: '100%' }} className="auth-card">
                 <Space direction="vertical" size="large" style={{ width: '100%' }}>
                   <div>
-                    <Form layout="vertical">
-                      <Form.Item>
+                    <Form layout="vertical" form={form} onFinish={handleCreateOrganisation}>
+                      <Form.Item
+                        name="name"
+                        rules={[{ required: true, message: 'Bitte geben Sie einen Namen ein' }]}
+                      >
                         <Input 
                           placeholder="Name" 
                           style={{ marginBottom: '10px' }}
                         />
                       </Form.Item>
-                      <Form.Item>
+                      <Form.Item
+                        name="address"
+                        rules={[{ required: true, message: 'Bitte geben Sie eine Adresse ein' }]}
+                      >
                         <Input 
                           placeholder="Adresse"
                           style={{ marginBottom: '10px' }}
                         />
                       </Form.Item>
                       <Form.Item>
-                        <Button type="primary" style={{ width: '100%' }}>
+                        <Button type="primary" htmlType="submit" style={{ width: '100%' }}>
                           Erstellen
                         </Button>
                       </Form.Item>
                     </Form>
                   </div>
-
                   <Divider />
-                  <Text type="secondary">Ihre Organisationen auf einen Blick</Text>
                   <div>
-                    <Title level={3}>Lorem ipsum GmbH</Title>
-                    <Text type="secondary">Lorem Ipsum GmbH</Text>
+                    <Form layout="vertical">
+                      <Form.Item>
+                        <Input 
+                          placeholder="Organisations-TOKEN" 
+                          style={{ marginBottom: '10px' }}
+                        />
+                      </Form.Item>
+                      <Form.Item>
+                        <Button type="primary" style={{ width: '100%' }}>
+                          Beitreten
+                        </Button>
+                      </Form.Item>
+                    </Form>
                   </div>
                 </Space>
               </Card>
