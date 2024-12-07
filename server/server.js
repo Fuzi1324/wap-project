@@ -18,20 +18,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// ************** MIDDLEWARES **************
-
-async function isAdminMiddleware(req, res, next) {
-    const db = req.app.get('db');
-    const user = await db.collection('user').findOne({ _id: new ObjectId(res.locals?.oauth?.token?.user?.user_id) });
-    if (user?.role === 'admin') {
-      req.user = user;
-      next();
-    } else {
-      console.log('User is not admin');
-      res.status(403).send();
-    }
-  }
-
 async function startServer() {
     try {
         const client = new MongoClient(connectionString);
@@ -49,7 +35,6 @@ async function startServer() {
         app.use('/api/token', oauth.token({ requireClientAuthentication: { password: false, refresh_token: false } }));
         app.use('/api/register', register);
         app.use('/api', oauth.authenticate(), api);
-        app.use('/api/admin', oauth.authenticate(), isAdminMiddleware, api);
 
         app.listen(port, () => {
             console.log(`Example app listening on port ${port}`);

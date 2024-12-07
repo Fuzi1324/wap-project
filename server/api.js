@@ -1,5 +1,6 @@
 import express from 'express';
 import { ObjectId } from 'mongodb';
+import dayjs from 'dayjs'; // Import dayjs library
 
 const router = express.Router();
 
@@ -177,52 +178,132 @@ router.get('/all-users', async (req, res) => {
 // ************** SCHEDULE ROUTES **************
 
 router.post('/generate-schedule', isAdminMiddleware, async (req, res) => {
-  const { workStartTime, workEndTime, workDays, users } = req.body;
+  const { month, users } = req.body;
+
+  if (!month || !users) {
+    return res.status(400).json({ error: 'Monat und Benutzerdaten sind erforderlich' });
+  }
 
   try {
     const db = req.app.get('db');
-    const totalHoursPerDay = (new Date(`1970-01-01T${workEndTime}`) - new Date(`1970-01-01T${workStartTime}`)) / 3600000;
+    
+    // Hole die bestehende Konfiguration für den Monat aus der schedules Collection
+    const existingSchedule = await db.collection('schedules').findOne({ month });
+    
+    // Standard-Konfiguration, falls keine existiert
+    const defaultConfig = existingSchedule?.defaultConfig || {
+      workStartTime: '09:00',
+      workEndTime: '17:00',
+      workDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    };
 
-    const schedule = users.map(user => {
-      const vacationDates = user.vacationDates || [];
-      const dailyHours = Math.min(user.weeklyHours / workDays.length, totalHoursPerDay);
+    const monthlySchedule = existingSchedule?.schedule || [];
+    
+    // Erstelle ein Map für schnellen Zugriff auf die täglichen Arbeitszeiten
+    const dailyScheduleMap = new Map(
+      monthlySchedule.map(day => [day.date, day])
+    );
 
-      return {
-        user: user.username,
-        schedule: workDays.map(day => {
-          try {
-            const dayDate = day instanceof Date ? day : new Date(day);
-            const isVacationDay = vacationDates.includes(dayDate);
+    // Berechne den Dienstplan für jeden User
+    const generatedSchedule = users.map(user => {
+      const vacationDates = getVacationDaysFromPeriods(user.vacationPeriods);
+      const weeklyHours = user.weeklyHours || 40; // Standard: 40 Stunden
+      const workingDaysCount = defaultConfig.workDays.length;
+      const targetDailyHours = weeklyHours / workingDaysCount;
 
-            return {
-              day: dayDate,
-              start: isVacationDay ? null : workStartTime,
-              end: isVacationDay ? null : workEndTime,
-              hours: isVacationDay ? 0 : dailyHours
+      // Erstelle den Monatsplan
+      const monthStart = new Date(month + '-01');
+      const monthEnd = new Date(new Date(monthStart).setMonth(monthStart.getMonth() + 1));
+      const schedule = [];
+
+      for (let date = new Date(monthStart); date < monthEnd; date.setDate(date.getDate() + 1)) {
+        const dateStr = date.toISOString().split('T')[0];
+        const dayName = date.toLocaleString('en-US', { weekday: 'long' });
+        const isDefaultWorkDay = defaultConfig.workDays.includes(dayName);
+        const monthlyOverride = dailyScheduleMap.get(dateStr);
+        const isVacationDay = vacationDates.includes(dateStr);
+
+        // Bestimme die Arbeitszeiten für diesen Tag
+        let daySchedule = {
+          date: dateStr,
+          start: null,
+          end: null,
+          hours: 0,
+          isVacationDay,
+          isWorkDay: false
+        };
+
+        // Prüfe zuerst, ob der Tag als arbeitsfrei markiert wurde
+        if (!isVacationDay && monthlyOverride) {
+          if (monthlyOverride.isWorkDay === false) {
+            // Tag wurde explizit als arbeitsfrei markiert
+            schedule.push(daySchedule);
+            continue;
+          }
+        }
+
+        if (!isVacationDay && (isDefaultWorkDay || (monthlyOverride && monthlyOverride.isWorkDay))) {
+          if (monthlyOverride) {
+            // Verwende die monatliche Überschreibung mit angepassten Stunden
+            const adjustedTime = calculateAdjustedWorkTime(
+              monthlyOverride.startTime,
+              monthlyOverride.endTime,
+              targetDailyHours
+            );
+            daySchedule = {
+              ...daySchedule,
+              start: adjustedTime.start,
+              end: adjustedTime.end,
+              hours: targetDailyHours,
+              isWorkDay: true
             };
-          } catch (error) {
-            return {
-              day: day,
-              start: null,
-              end: null,
-              hours: 0
+          } else {
+            // Verwende die Standard-Konfiguration mit angepassten Stunden
+            const adjustedTime = calculateAdjustedWorkTime(
+              defaultConfig.workStartTime,
+              defaultConfig.workEndTime,
+              targetDailyHours
+            );
+            daySchedule = {
+              ...daySchedule,
+              start: adjustedTime.start,
+              end: adjustedTime.end,
+              hours: targetDailyHours,
+              isWorkDay: true
             };
           }
-        })
+        }
+
+        schedule.push(daySchedule);
+      }
+
+      // Berechne die tatsächlichen Gesamtstunden
+      const totalHours = schedule.reduce((sum, day) => sum + day.hours, 0);
+
+      return {
+        userId: user._id,
+        username: `${user.first_name} ${user.last_name}`,
+        weeklyHours,
+        totalHours: Math.round(totalHours * 100) / 100, // Runde auf 2 Dezimalstellen
+        schedule
       };
     });
-    
+
+    // Speichere den generierten Dienstplan in der schedules Collection
     const result = await db.collection('schedules').insertOne({
+      month,
       generatedAt: new Date(),
-      workStartTime,
-      workEndTime,
-      workDays,
-      schedule
+      schedule: generatedSchedule,
+      defaultConfig
     });
 
-    res.json({ schedule, message: 'Dienstplan erfolgreich generiert und gespeichert', scheduleId: result.insertedId });
+    res.json({ 
+      message: 'Dienstplan erfolgreich generiert',
+      scheduleId: result.insertedId 
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Fehler beim Generieren des Dienstplans' });
+    console.error('Error generating schedule:', error);
+    res.status(500).json({ error: 'Fehler bei der Dienstplangenerierung' });
   }
 });
 
@@ -279,10 +360,113 @@ router.post('/check-email', async (req, res) => {
   }
 });
 
+// ************** WORK SCHEDULE ROUTES **************
+
+router.post('/work-schedule', isAdminMiddleware, async (req, res) => {
+  const { month, schedule, defaultConfig } = req.body;
+
+  try {
+    const db = req.app.get('db');
+    
+    // Überprüfe, ob bereits ein Schedule für diesen Monat existiert
+    const existingSchedule = await db.collection('schedules').findOne({ month });
+    
+    if (existingSchedule) {
+      // Update existierenden Schedule
+      await db.collection('schedules').updateOne(
+        { month },
+        { 
+          $set: { 
+            schedule,
+            defaultConfig,
+            updatedAt: new Date()
+          } 
+        }
+      );
+    } else {
+      // Erstelle neuen Schedule
+      await db.collection('schedules').insertOne({
+        month,
+        schedule,
+        defaultConfig,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+    }
+
+    res.status(200).json({ message: 'Arbeitszeiten erfolgreich gespeichert' });
+  } catch (error) {
+    console.error('Error saving work schedule:', error);
+    res.status(500).json({ error: 'Interner Serverfehler' });
+  }
+});
+
+router.get('/work-schedule/:month', async (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { month } = req.params;
+    
+    const schedule = await db.collection('schedules').findOne({ month });
+    
+    if (schedule) {
+      res.json(schedule);
+    } else {
+      res.status(404).json({ message: 'Kein Arbeitsplan für diesen Monat gefunden' });
+    }
+  } catch (error) {
+    console.error('Error fetching work schedule:', error);
+    res.status(500).json({ error: 'Interner Serverfehler' });
+  }
+});
+
 // ************** ERROR HANDLING **************
 
 router.use((req, res) => {
   res.status(404).send('404: Seite nicht gefunden');
 });
+
+// Hilfsfunktion zur Berechnung der Arbeitsstunden
+function calculateHours(startTime, endTime) {
+  const [startHour, startMinute] = startTime.split(':').map(Number);
+  const [endHour, endMinute] = endTime.split(':').map(Number);
+  return (endHour + endMinute/60) - (startHour + startMinute/60);
+}
+
+// Hilfsfunktion zur Berechnung der angepassten Arbeitszeit
+function calculateAdjustedWorkTime(startTime, endTime, targetHours) {
+  const start = dayjs(`2000-01-01 ${startTime}`);
+  const end = dayjs(`2000-01-01 ${endTime}`);
+  const totalMinutes = end.diff(start, 'minute');
+  const targetMinutes = targetHours * 60;
+
+  // Wenn die Zielarbeitszeit kürzer ist als die Standardzeit
+  if (targetMinutes < totalMinutes) {
+    // Behalte die Startzeit bei und kürze nur am Ende
+    const adjustedEnd = start.add(targetMinutes, 'minute');
+    return {
+      start: startTime,
+      end: adjustedEnd.format('HH:mm')
+    };
+  }
+
+  return { start: startTime, end: endTime };
+}
+
+// Hilfsfunktion zum Extrahieren aller Urlaubstage aus den Urlaubsperioden
+function getVacationDaysFromPeriods(vacationPeriods) {
+  if (!vacationPeriods || !Array.isArray(vacationPeriods)) return [];
+  
+  const allDays = [];
+  vacationPeriods.forEach(period => {
+    const start = new Date(period.startDate);
+    const end = new Date(period.endDate);
+    
+    for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+      allDays.push(date.toISOString().split('T')[0]);
+    }
+  });
+  
+  return allDays;
+}
 
 export default router;

@@ -259,17 +259,31 @@ function AdminPage() {
         navigate('/login');
         return;
       }
+
+      const currentMonth = new Date().toISOString().slice(0, 7); // Format: YYYY-MM
+      
       const response = await fetch('/api/generate-schedule', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken}`
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ workStartTime, workEndTime, workDays, users })
+        body: JSON.stringify({ 
+          month: currentMonth,
+          users: users.map(user => ({
+            ...user,
+            weeklyHours: parseInt(user.weeklyHours) || 40,
+            vacationDates: user.vacationDates || []
+          }))
+        })
       });
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         throw new Error(errorData?.message || `HTTP error! status: ${response.status}`);
       }
+
+      message.success('Dienstplan erfolgreich generiert');
       await fetchSchedules();
     } catch (error) {
       console.error('Error generating schedule:', error);
