@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { List, Input, DatePicker, Button, Space } from 'antd';
+import React from 'react';
+import { List, Input, Space } from 'antd';
 import dayjs from 'dayjs';
 
 const EmployeeList = ({ 
@@ -11,61 +11,26 @@ const EmployeeList = ({
   onVacationDatesChange,
   onSaveVacationDates 
 }) => {
-  const [changedFields, setChangedFields] = useState({});
-
-  const handleWeeklyHoursChange = (userId, value) => {
+  const handleWeeklyHoursChange = async (userId, value) => {
+    // Aktualisiere die UI
     onWeeklyHoursChange(userId, value);
-    setChangedFields(prev => ({
-      ...prev,
-      [userId]: {
-        ...prev[userId],
-        weeklyHours: true
-      }
-    }));
+    // Speichere sofort in der Datenbank
+    await onSaveWeeklyHours(userId, value);
   };
 
-  const handleVacationDaysChange = (userId, value) => {
+  const handleVacationDaysChange = async (userId, value) => {
+    // Aktualisiere die UI
     onVacationDaysChange(userId, value);
-    setChangedFields(prev => ({
-      ...prev,
-      [userId]: {
-        ...prev[userId],
-        vacationDays: true
-      }
-    }));
+    // Speichere sofort in der Datenbank
+    await onSaveVacationDays(userId, value);
   };
 
-  const handleVacationDatesChange = (userId, dates) => {
+  const handleVacationDatesChange = async (userId, dates) => {
+    // Aktualisiere die UI
     onVacationDatesChange(userId, dates);
-    setChangedFields(prev => ({
-      ...prev,
-      [userId]: {
-        ...prev[userId],
-        vacationDates: true
-      }
-    }));
+    // Speichere sofort in der Datenbank
+    await onSaveVacationDates(userId, dates);
   };
-
-  const handleSaveAllChanges = async () => {
-    for (const user of users) {
-      const userChanges = changedFields[user._id] || {};
-      
-      if (userChanges.weeklyHours) {
-        await onSaveWeeklyHours(user._id, user.weeklyHours);
-      }
-      
-      if (userChanges.vacationDays) {
-        await onSaveVacationDays(user._id, user.vacationDays);
-      }
-      
-      if (userChanges.vacationDates) {
-        await onSaveVacationDates(user._id, user.vacationDates);
-      }
-    }
-    setChangedFields({});
-  };
-
-  const hasAnyChanges = Object.keys(changedFields).length > 0;
 
   return (
     <div>
@@ -120,14 +85,6 @@ const EmployeeList = ({
           </List.Item>
         )}
       />
-      <Button 
-        type="primary" 
-        onClick={handleSaveAllChanges}
-        disabled={!hasAnyChanges}
-        style={{ marginTop: 16 }}
-      >
-        Alle Änderungen speichern
-      </Button>
     </div>
   );
 };
