@@ -165,42 +165,41 @@ function GeneralConfig({ workStartTime, setWorkStartTime, workEndTime, setWorkEn
     const dayName = date.locale('en').format('dddd');
     const isDefaultWorkDay = workDays.includes(dayName);
     
-    if (selectedDates.has(dateKey)) {
-      const currentSettings = selectedDates.get(dateKey);
-      // Toggle zwischen Arbeitstag und arbeitsfreiem Tag
-      if (currentSettings.isWorkDay) {
-        const newDates = new Map(selectedDates);
-        newDates.set(dateKey, { 
-          ...currentSettings, 
-          isWorkDay: false,
-          isDefault: isDefaultWorkDay // Setze isDefault basierend auf Standard-Arbeitstagen
-        });
-        setSelectedDates(newDates);
-        saveScheduleToDatabase(newDates);
-      } else {
-        // Wenn es kein Arbeitstag war, mache es wieder zu einem mit Standardzeiten
-        const newDates = new Map(selectedDates);
-        newDates.set(dateKey, {
-          start: defaultStartTime,
-          end: defaultEndTime,
-          isDefault: isDefaultWorkDay, // Setze isDefault basierend auf Standard-Arbeitstagen
-          isWorkDay: true
-        });
-        setSelectedDates(newDates);
-        saveScheduleToDatabase(newDates);
-      }
-    } else {
-      // Füge einen neuen Arbeitstag hinzu
-      const newDates = new Map(selectedDates);
-      newDates.set(dateKey, {
-        start: defaultStartTime,
-        end: defaultEndTime,
-        isDefault: isDefaultWorkDay, // Setze isDefault basierend auf Standard-Arbeitstagen
-        isWorkDay: true
-      });
-      setSelectedDates(newDates);
-      saveScheduleToDatabase(newDates);
-    }
+    const newDates = new Map(selectedDates);
+    const currentSettings = selectedDates.get(dateKey) || {
+      start: defaultStartTime,
+      end: defaultEndTime,
+      isDefault: isDefaultWorkDay,
+      isWorkDay: isDefaultWorkDay
+    };
+
+    // Wenn der Tag manuell geändert wird, setze isDefault auf false
+    newDates.set(dateKey, {
+      ...currentSettings,
+      isWorkDay: !currentSettings.isWorkDay,
+      isDefault: false, // Markiere als nicht-Standard, wenn manuell geändert
+      // Behalte die Start- und Endzeiten bei
+      start: currentSettings.start,
+      end: currentSettings.end
+    });
+
+    setSelectedDates(newDates);
+    saveScheduleToDatabase(newDates);
+  };
+
+  // Neue Hilfsfunktion zum Überprüfen, ob ein Tag von den Standardeinstellungen abweicht
+  const isDayModified = (dateKey, settings) => {
+    const dayName = dayjs(dateKey).locale('en').format('dddd');
+    const isDefaultWorkDay = workDays.includes(dayName);
+    
+    return (
+      !settings.isDefault || // Wenn explizit als nicht-Standard markiert
+      settings.isWorkDay !== isDefaultWorkDay || // Wenn der Arbeitstag-Status anders ist als Standard
+      (settings.isWorkDay && ( // Wenn es ein Arbeitstag ist und die Zeiten anders sind
+        !settings.start.isSame(defaultStartTime, 'minute') ||
+        !settings.end.isSame(defaultEndTime, 'minute')
+      ))
+    );
   };
 
   const handleTimeChange = (times) => {
@@ -246,10 +245,10 @@ function GeneralConfig({ workStartTime, setWorkStartTime, workEndTime, setWorkEn
       return (
         <div style={{ backgroundColor, padding: '2px', borderRadius: '4px' }}>
           {dateSchedule.isWorkDay ? (
-            <>
+            < >
               {dateSchedule.start.format('HH:mm')} - {dateSchedule.end.format('HH:mm')}
               {dateSchedule.isDefault && <div style={{ fontSize: '10px' }}><Tag color="blue">Standard</Tag></div>}
-            </>
+            </ >
           ) : (
             <Tag color="red">Arbeitsfrei</Tag>
           )}
