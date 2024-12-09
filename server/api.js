@@ -49,30 +49,41 @@ router.get('/user/me', async (req, res) => {
 
 router.put('/user/:id/organisation', async (req, res) => {
   const { id } = req.params;
-  const { organisation } = req.body;
+  const { name, address, token } = req.body;
 
-  if (!organisation || !Array.isArray(organisation)) {
+  if (!name || !address) {
     return res.status(400).json({ message: 'Ungültige Organisationsdaten' });
   }
 
   try {
     const db = req.app.get('db');
+
+    const orgResult = await db.collection('organisation').insertOne({
+      name: name,
+      address: address,
+      token: token
+    });
+
     const result = await db.collection('user').updateOne(
       { _id: new ObjectId(id) },
       { 
         $set: { 
-          organisation: organisation,
+          organisation: orgResult.insertedId,
           role: 'admin'
         } 
       }
     );
 
     if (result.modifiedCount === 1) {
-      res.status(200).json({ message: 'Organisation erfolgreich aktualisiert' });
+      res.status(200).json({ 
+        message: 'Organisation erfolgreich aktualisiert',
+        organisationId: orgResult.insertedId
+      });
     } else {
       res.status(404).json({ error: 'Benutzer nicht gefunden' });
     }
   } catch (error) {
+    console.error('Error:', error);
     res.status(500).json({ message: 'Interner Serverfehler' });
   }
 });

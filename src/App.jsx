@@ -8,7 +8,7 @@ const { Title, Text } = Typography;
 
 function App() {
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: '90vh' }}>
       <Navigation />
       <Content style={{ padding: '50px' }}>
       <Space direction="vertical" size="large" style={{ width: '100%', maxWidth: '800px', margin: '0 auto' }}>
