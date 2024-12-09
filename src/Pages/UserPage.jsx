@@ -84,6 +84,15 @@ export default function UserPage() {
   };
 
   const handleCreateOrganisation = async (values) => {
+    const generateToken = (length) => {
+      const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      let result = '';
+      for (let i = 0; i < length; i++) {
+          result += characters.charAt(Math.floor(Math.random() * characters.length));
+      }
+      return result;
+  };
+
     try {
       const accessToken = localStorage.getItem('accessToken');
       if (!accessToken) {
@@ -92,6 +101,8 @@ export default function UserPage() {
         return;
       }
 
+      const token = generateToken(10);
+
       const response = await fetch(`/api/user/${userData._id}/organisation`, {
         method: 'PUT',
         headers: {
@@ -99,10 +110,9 @@ export default function UserPage() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          organisation: [
-            values.name,
-            values.address
-          ]
+          name: values.name,
+          address: values.address,
+          token: token
         }),
       });
 
@@ -113,10 +123,11 @@ export default function UserPage() {
         throw new Error(errorMessage);
       }
 
+      const data = await response.json();
       message.success('Organisation erfolgreich erstellt!');
       setUserData(prev => ({
         ...prev,
-        organisation: [values.name, values.address]
+        organisation: data.organisationId
       }));
 
       form.resetFields();
@@ -173,8 +184,8 @@ export default function UserPage() {
                   <div>
                     {userData.organisation ? (
                       <>
-                        <Title level={3}>{userData.organisation[0]}</Title>
-                        <Text type="secondary">{userData.organisation[1]}</Text>
+                        <Title level={3}>{userData.organisation}</Title>
+                        <Text type="secondary">{userData.organisation}</Text>
                       </>
                     ) : (
                       <Text type="secondary">Sieht so aus als ob Sie noch keiner Organisation beigetreten sind. <br />Jetzt aber schnell!</Text>
@@ -209,6 +220,11 @@ export default function UserPage() {
                       <Form.Item>
                         <Button type="primary" htmlType="submit" style={{ width: '100%' }}>
                           Erstellen
+                        </Button>
+                      </Form.Item>
+                      <Form.Item>
+                        <Button type="primary" htmlType="submit" style={{ width: '100%' }}>
+                          Löschen
                         </Button>
                       </Form.Item>
                     </Form>
