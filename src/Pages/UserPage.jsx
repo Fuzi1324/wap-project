@@ -168,15 +168,8 @@ export default function UserPage() {
 
                   {userData.role && (
                     <div>
-                      <Title level={3}>{userData.role}</Title>
-                      <Text type ="secondary">Role</Text>
-                    </div>
-                  )}
-                  
-                  {userData.department && (
-                    <div>
-                      <Title level={3}>{userData.department}</Title>
-                      <Text type ="secondary">Department</Text>
+                      <Title level={3}>{userData.role === 'admin' ? 'Administrator' : 'Mitarbeiter'}</Title>
+                      <Text type ="secondary">Rolle</Text>
                     </div>
                   )}
 
@@ -195,7 +188,7 @@ export default function UserPage() {
               </Card>
             </Col>
             <Col xs={24} sm={24} md={8} lg={8} style={{ display: 'flex', justifyContent: 'center' }}>
-              <Card title="Organisationen" style={{ height: '100%' }} className="auth-card">
+              <Card title="Organisation" style={{ height: '100%' }} className="auth-card">
                 <Space direction="vertical" size="large" style={{ width: '100%' }}>
                   <div>
                     <Form layout="vertical" form={form} onFinish={handleCreateOrganisation}>
