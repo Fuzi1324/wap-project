@@ -33,7 +33,7 @@ const VacationDatesPicker = ({ initialVacations = [], onSave, maxVacationDays })
     });
   };
 
-  const handleAddVacation = () => {
+  const handleAddAndSaveVacation = async () => {
     if (!currentSelection) return;
 
     const newDays = currentSelection.endDate.diff(currentSelection.startDate, 'days') + 1;
@@ -54,23 +54,13 @@ const VacationDatesPicker = ({ initialVacations = [], onSave, maxVacationDays })
       return;
     }
 
-    setVacationPeriods([...vacationPeriods, currentSelection]);
+    const updatedVacations = [...vacationPeriods, currentSelection];
+    setVacationPeriods(updatedVacations);
     setCurrentSelection(null);
-  };
 
-  const handleRemoveVacation = (index) => {
-    setVacationPeriods(vacationPeriods.filter((_, i) => i !== index));
-  };
-
-  const handleSave = async () => {
+    // Save logic
     try {
-      const totalDays = calculateTotalVacationDays(vacationPeriods);
-      if (totalDays > maxVacationDays) {
-        message.error(`Die Gesamtzahl der Urlaubstage (${totalDays}) überschreitet das erlaubte Maximum von ${maxVacationDays} Tagen.`);
-        return;
-      }
-
-      const formattedVacations = vacationPeriods.map(period => ({
+      const formattedVacations = updatedVacations.map(period => ({
         startDate: period.startDate.format('YYYY-MM-DD'),
         endDate: period.endDate.format('YYYY-MM-DD')
       }));
@@ -82,6 +72,28 @@ const VacationDatesPicker = ({ initialVacations = [], onSave, maxVacationDays })
     } catch (error) {
       console.error('Error in VacationDatesPicker:', error);
       message.error(error.message || 'Fehler beim Speichern der Urlaubstage');
+    }
+  };
+
+  const handleRemoveVacation = async (index) => {
+    const updatedVacations = vacationPeriods.filter((_, i) => i !== index);
+
+    setVacationPeriods(updatedVacations);
+
+    // Save updated data to database
+    try {
+      const formattedVacations = updatedVacations.map(period => ({
+        startDate: period.startDate.format('YYYY-MM-DD'),
+        endDate: period.endDate.format('YYYY-MM-DD')
+      }));
+
+      const success = await onSave(formattedVacations);
+      if (success) {
+        message.success('Urlaubstag erfolgreich entfernt');
+      }
+    } catch (error) {
+      console.error('Error while removing vacation:', error);
+      message.error(error.message || 'Fehler beim Entfernen des Urlaubstags');
     }
   };
 
@@ -112,7 +124,7 @@ const VacationDatesPicker = ({ initialVacations = [], onSave, maxVacationDays })
         />
         <Button 
           type="primary" 
-          onClick={handleAddVacation}
+          onClick={handleAddAndSaveVacation}
           disabled={!currentSelection}
           style={{ marginTop: 8 }}
         >
@@ -140,15 +152,6 @@ const VacationDatesPicker = ({ initialVacations = [], onSave, maxVacationDays })
           )}
         />
       </div>
-
-      <Button 
-        type="primary" 
-        onClick={handleSave}
-        disabled={vacationPeriods.length === 0}
-        style={{ marginTop: 16 }}
-      >
-        Alle Urlaubstage speichern
-      </Button>
     </Space>
   );
 };

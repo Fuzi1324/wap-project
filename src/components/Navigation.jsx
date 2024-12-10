@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import Logo from '/images/Logo.png'
-import { Layout, Menu, Typography, message } from 'antd'
+import { Layout, Menu, message } from 'antd'
 import { useState, useEffect } from 'react'
 
 const { Header } = Layout
@@ -10,39 +10,69 @@ export default function Navigation() {
   const navigate = useNavigate();
   const [userId, setUserId] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const accessToken = localStorage.getItem('accessToken');
-        if (!accessToken) {
-          setIsLoggedIn(false);
-          return;
-        }
+    fetchUserData();
+    fetchIsAdmin();
+  }, []);
 
-        const response = await fetch('/api/user/me', {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`
-          }
-        });
+  const fetchUserData = async () => {
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        setIsLoggedIn(false);
+        return;
+      }
 
-        if (response.ok) {
-          const data = await response.json();
-          setUserId(data._id);
-          setIsLoggedIn(true);
-        } else {
-          setIsLoggedIn(false);
-          localStorage.removeItem('accessToken');
+      const response = await fetch('/api/user/me', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
         }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUserId(data._id);
+        setIsLoggedIn(true);
+      } else {
         setIsLoggedIn(false);
         localStorage.removeItem('accessToken');
       }
-    };
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      setIsLoggedIn(false);
+      localStorage.removeItem('accessToken');
+    }
+  };
 
-    fetchUserData();
-  }, []);
+  const fetchIsAdmin = async () => {
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        setIsAdmin(false);
+        return;
+      }
+
+      const response = await fetch('/api/user/me', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.role === 'admin') {
+          setIsAdmin(true);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+      }catch (error) {
+        console.error('Error fetching user data:', error);
+        setIsAdmin(false);
+      }
+    };
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
@@ -65,21 +95,16 @@ export default function Navigation() {
           selectedKeys={[location.pathname]}
           style={{ flexGrow: 1, justifyContent: 'flex-end' }}
         >
-          {!isLoggedIn ? (
+          {isLoggedIn ? (
             <>
-              <Menu.Item key="/login">
-                <Link to="/login">Login</Link>
-              </Menu.Item>
-
-              <Menu.Item key="/register">
-                <Link to="/register">Register</Link>
-              </Menu.Item>
-            </>
-          ) : (
-            <>
+              {isAdmin ? (
               <Menu.Item key="/admin">
-                <Link to="/admin">Admin</Link>
+                <Link to="/admin">Verwaltung</Link>
               </Menu.Item>
+              ) : (
+                <p></p>
+              )}
+
               <Menu.Item key={`/user/${userId}`}>
                 <Link to={`/user/${userId}`}>Profil</Link>
               </Menu.Item>
@@ -87,6 +112,17 @@ export default function Navigation() {
               <Menu.Item key="logout" onClick={handleLogout}>
                 Logout
               </Menu.Item>
+
+            </>
+          ) : (
+            <>
+            <Menu.Item key="/login">
+            <Link to="/login">Login</Link>
+            </Menu.Item>
+
+          <Menu.Item key="/register">
+            <Link to="/register">Registrieren</Link>
+             </Menu.Item>
             </>
           )}
         </Menu>

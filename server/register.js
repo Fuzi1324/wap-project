@@ -48,6 +48,10 @@ router.put('/:token', async (req, res) => {
           first_name: req.body.first_name,
           last_name: req.body.last_name,
           role: 'user',
+          weeklyHours: 40,
+          vacationPeriods: [],
+          vacationDays: 25,
+          organisation: null,
         });
   
         if (insertion.acknowledged) {
