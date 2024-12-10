@@ -47,6 +47,91 @@ router.get('/user/me', async (req, res) => {
   }
 });
 
+router.get('/user/organization', async (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const userId = res.locals.oauth.token.user.user_id;
+    const user = await db.collection('user').findOne({ _id: new ObjectId(userId) });
+
+    if (!user || !user.organisation) {
+      return res.status(404).json({ message: 'Keine Organisation gefunden' });
+    }
+
+    const organisationId = user.organisation;
+    const objectId = new ObjectId(organisationId);
+    const organisation = await db.collection('organisation').findOne({ _id: objectId });
+
+    if (!organisation) {
+      return res.status(404).json({ message: 'Organisation nicht gefunden' });
+    }
+
+    const orgData = {
+      ...organisation,
+    };
+
+    res.json(orgData);
+  } catch (error) {
+    res.status(500).json({ message: 'Interner Serverfehler' });
+  }
+});
+
+router.delete('/user/:id/organisation', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const db = req.app.get('db');
+    const result = await db.collection('user').updateOne(
+      { _id: new ObjectId(id) },
+      { $unset: { organisation: '' } }
+    );
+
+    if (result.modifiedCount === 1) {
+      res.status(200).json({ message: 'Organisation erfolgreich gelöscht' });
+    } else {
+      res.status(404).json({ error: 'Benutzer nicht gefunden' });
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ message: 'Interner Serverfehler' });
+  }
+});
+
+/*
+router.post('/user/:id/organisation', async (req, res) => {
+    const { id } = req.params;
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ message: 'Token erforderlich' });
+    }
+  
+    try{
+      const db = req.app.get('db');
+      const organisation = await db.collection('organisation').findOne({ token });
+
+      if (!organisation) {
+        return res.status(404).json({ message: 'Organisation nicht gefunden' });
+      }
+
+      const result = await db.collection('user').updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { organisation: organisation._id } }
+      );
+
+      if (result.matchedCount === 0) {
+        return res.status(404).json({ message: 'Benutzer nicht gefunden' });
+      }
+
+      res.status(200).json({
+        message: 'Erfolgreich der Organisation beigetreten',
+        organisation: organisation._id
+      });
+  } catch (error) {
+    console.error('Error joining organisation:', error);
+    res.status(500).json({ message: 'Interner Serverfehler' });
+  }
+});
+*/
+
 router.put('/user/:id/organisation', async (req, res) => {
   const { id } = req.params;
   const { name, address, token } = req.body;
@@ -87,6 +172,9 @@ router.put('/user/:id/organisation', async (req, res) => {
     res.status(500).json({ message: 'Interner Serverfehler' });
   }
 });
+
+
+
 
 // ************** TIME MANAGEMENT ROUTES **************
 
