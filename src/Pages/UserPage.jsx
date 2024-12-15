@@ -119,39 +119,50 @@ export default function UserPage() {
     }
   };
 
-  const handleDeleteOrganisation = async () => {
-    try {
-      const accessToken = localStorage.getItem('accessToken');
-      if (!accessToken) {
-        message.error('Nicht eingeloggt');
-        navigate('/user:id');
-        return;
-      }
-
-      const response = await fetch(`/api/user/${userData._id}/organisation`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        const errorMessage = errorData?.message || `HTTP error! status: ${response.status}`;
-        message.error(errorMessage);
-        throw new Error(errorMessage);
-      }
-
-      message.success('Organisation erfolgreich gelöscht!');
-      setUserData(prev => ({
-        ...prev,
-        organisation: null
-      }));
-    } catch (error) {
-      console.error('Error deleting organisation:', error);
-      message.error('Fehler beim Löschen der Organisation: ' + error.message);
+const handleDeleteOrganisation = async () => {
+  try {
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
+      message.error('Nicht eingeloggt');
+      navigate('/user:id');
+      return;
     }
-  };
+
+    const response = await fetch(`/api/user/${userData._id}/organisation`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      const errorMessage = errorData?.message || `HTTP error! status: ${response.status}`;
+      message.error(errorMessage);
+      throw new Error(errorMessage);
+    }
+
+    message.success('Organisation erfolgreich gelöscht!');
+    
+    // Lade die aktualisierten Benutzerdaten neu
+    const userResponse = await fetch('/api/user/me', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+
+    if (userResponse.ok) {
+      const updatedUserData = await userResponse.json();
+      setUserData(updatedUserData);
+    } else {
+      message.error('Fehler beim Aktualisieren der Benutzerdaten');
+    }
+
+  } catch (error) {
+    console.error('Error deleting organisation:', error);
+    message.error('Fehler beim Löschen der Organisation: ' + error.message);
+  }
+};
 
   const handleCreateOrganisation = async (values) => {
     const generateToken = (length) => {
@@ -363,7 +374,11 @@ export default function UserPage() {
             <Row gutter={[48, 48]} style={{ width: '100%', justifyContent: 'center' }}>
               <Col span={24}>
                 <Card title="Urlaubsplanung" style={{ height: '100%' }} className="auth-card_wide">
-                  <VacationDatesPicker onSave={handleSaveVacationDates} initialVacationPeriods={userData.vacationPeriods} />
+                  <VacationDatesPicker 
+                    onSave={handleSaveVacationDates} 
+                    initialVacationPeriods={userData.vacationPeriods || []}
+                    maxVacationDays={userData.vacationDays || 30}
+                  />
                 </Card>
               </Col>
             </Row>

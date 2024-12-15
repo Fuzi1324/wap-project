@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { DatePicker, Button, message, Space, List, Typography } from 'antd';
 import dayjs from 'dayjs';
+import 'dayjs/locale/de';
+import locale from 'antd/es/date-picker/locale/de_DE';
 
 const { RangePicker } = DatePicker;
 const { Text } = Typography;
 
-const VacationDatesPicker = ({ initialVacations = [], onSave, maxVacationDays }) => {
+dayjs.locale('de');
+
+const VacationDatesPicker = ({ initialVacationPeriods = [], onSave, maxVacationDays = 30 }) => {
   const [vacationPeriods, setVacationPeriods] = useState(
-    initialVacations.map(period => ({
+    (initialVacationPeriods || []).map(period => ({
       startDate: dayjs(period.startDate),
       endDate: dayjs(period.endDate)
     }))
@@ -121,6 +125,8 @@ const VacationDatesPicker = ({ initialVacations = [], onSave, maxVacationDays })
           onChange={handleDateRangeSelect}
           disabledDate={disabledDate}
           style={{ width: '100%' }}
+          locale={locale}
+          placeholder={['Von', 'Bis']}
         />
         <Button 
           type="primary" 
