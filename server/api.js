@@ -65,8 +65,15 @@ router.get('/user/organization', async (req, res) => {
       return res.status(404).json({ message: 'Organisation nicht gefunden' });
     }
 
+    const defaultConfig = {
+      workStartTime: '09:00',
+      workEndTime: '17:00',
+      workDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    };
+
     const orgData = {
       ...organisation,
+      default_config: organisation.default_config || defaultConfig
     };
 
     res.json(orgData);
@@ -81,7 +88,10 @@ router.delete('/user/:id/organisation', async (req, res) => {
     const db = req.app.get('db');
     const result = await db.collection('user').updateOne(
       { _id: new ObjectId(id) },
-      { $unset: { organisation: '' } }
+      { 
+        $unset: { organisation: '' },
+        $set: { role: 'user' }
+      }
     );
 
     if (result.modifiedCount === 1) {
@@ -286,28 +296,26 @@ router.post('/generate-schedule', isAdminMiddleware, async (req, res) => {
   try {
     const db = req.app.get('db');
     
-    // Hole die bestehende Konfiguration für den Monat aus der schedules Collection
-    const existingSchedule = await db.collection('schedules').findOne({ month });
+    // Hole die Organisation und ihre Konfiguration
+    const user = req.user;
+    const organisation = await db.collection('organisation').findOne(
+      { _id: new ObjectId(user.organisation) }
+    );
     
-    // Standard-Konfiguration, falls keine existiert
-    const defaultConfig = existingSchedule?.defaultConfig || {
-      workStartTime: '09:00',
-      workEndTime: '17:00',
-      workDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-    };
+    if (!organisation || !organisation.default_config) {
+      return res.status(400).json({ error: 'Keine Organisationskonfiguration gefunden' });
+    }
 
-    const monthlySchedule = existingSchedule?.schedule || [];
-    
-    // Erstelle ein Map für schnellen Zugriff auf die täglichen Arbeitszeiten
-    const dailyScheduleMap = new Map(
-      monthlySchedule.map(day => [day.date, day])
+    // Hole die monatlichen Anpassungen
+    const monthlyAdjustment = organisation.monthly_adjustments?.find(
+      adj => adj.month === month
     );
 
     // Berechne den Dienstplan für jeden User
     const generatedSchedule = users.map(user => {
       const vacationDates = getVacationDaysFromPeriods(user.vacationPeriods);
       const weeklyHours = user.weeklyHours || 40; // Standard: 40 Stunden
-      const workingDaysCount = defaultConfig.workDays.length;
+      const workingDaysCount = organisation.default_config.workDays.length;
       const targetDailyHours = weeklyHours / workingDaysCount;
 
       // Erstelle den Monatsplan
@@ -318,11 +326,12 @@ router.post('/generate-schedule', isAdminMiddleware, async (req, res) => {
       for (let date = new Date(monthStart); date < monthEnd; date.setDate(date.getDate() + 1)) {
         const dateStr = date.toISOString().split('T')[0];
         const dayName = date.toLocaleString('en-US', { weekday: 'long' });
-        const isDefaultWorkDay = defaultConfig.workDays.includes(dayName);
-        const monthlyOverride = dailyScheduleMap.get(dateStr);
+        const isDefaultWorkDay = organisation.default_config.workDays.includes(dayName);
+        
+        // Suche nach monatlicher Anpassung für diesen Tag
+        const dayAdjustment = monthlyAdjustment?.days.find(day => day.date === dateStr);
         const isVacationDay = vacationDates.includes(dateStr);
 
-        // Bestimme die Arbeitszeiten für diesen Tag
         let daySchedule = {
           date: dateStr,
           start: null,
@@ -332,35 +341,28 @@ router.post('/generate-schedule', isAdminMiddleware, async (req, res) => {
           isWorkDay: false
         };
 
-        // Prüfe zuerst, ob der Tag als arbeitsfrei markiert wurde
-        if (!isVacationDay && monthlyOverride) {
-          if (monthlyOverride.isWorkDay === false) {
-            // Tag wurde explizit als arbeitsfrei markiert
-            schedule.push(daySchedule);
-            continue;
-          }
-        }
-
-        if (!isVacationDay && (isDefaultWorkDay || (monthlyOverride && monthlyOverride.isWorkDay))) {
-          if (monthlyOverride) {
-            // Verwende die monatliche Überschreibung mit angepassten Stunden
+        if (!isVacationDay) {
+          if (dayAdjustment) {
+            // Verwende die monatliche Anpassung
+            if (dayAdjustment.isWorkDay) {
+              const adjustedTime = calculateAdjustedWorkTime(
+                dayAdjustment.startTime,
+                dayAdjustment.endTime,
+                targetDailyHours
+              );
+              daySchedule = {
+                ...daySchedule,
+                start: adjustedTime.start,
+                end: adjustedTime.end,
+                hours: targetDailyHours,
+                isWorkDay: true
+              };
+            }
+          } else if (isDefaultWorkDay) {
+            // Verwende die Standard-Konfiguration
             const adjustedTime = calculateAdjustedWorkTime(
-              monthlyOverride.startTime,
-              monthlyOverride.endTime,
-              targetDailyHours
-            );
-            daySchedule = {
-              ...daySchedule,
-              start: adjustedTime.start,
-              end: adjustedTime.end,
-              hours: targetDailyHours,
-              isWorkDay: true
-            };
-          } else {
-            // Verwende die Standard-Konfiguration mit angepassten Stunden
-            const adjustedTime = calculateAdjustedWorkTime(
-              defaultConfig.workStartTime,
-              defaultConfig.workEndTime,
+              organisation.default_config.workStartTime,
+              organisation.default_config.workEndTime,
               targetDailyHours
             );
             daySchedule = {
@@ -376,24 +378,23 @@ router.post('/generate-schedule', isAdminMiddleware, async (req, res) => {
         schedule.push(daySchedule);
       }
 
-      // Berechne die tatsächlichen Gesamtstunden
       const totalHours = schedule.reduce((sum, day) => sum + day.hours, 0);
 
       return {
         userId: user._id,
         username: `${user.first_name} ${user.last_name}`,
         weeklyHours,
-        totalHours: Math.round(totalHours * 100) / 100, // Runde auf 2 Dezimalstellen
+        totalHours: Math.round(totalHours * 100) / 100,
         schedule
       };
     });
 
-    // Speichere den generierten Dienstplan in der schedules Collection
+    // Speichere den generierten Dienstplan
     const result = await db.collection('schedules').insertOne({
       month,
+      organisation_id: organisation._id,
       generatedAt: new Date(),
-      schedule: generatedSchedule,
-      defaultConfig
+      schedule: generatedSchedule
     });
 
     res.json({ 
@@ -403,6 +404,36 @@ router.post('/generate-schedule', isAdminMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Error generating schedule:', error);
     res.status(500).json({ error: 'Fehler bei der Dienstplangenerierung' });
+  }
+});
+
+// Anpassung der GET-Route für Schedules
+router.get('/work-schedule/:month', async (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { month } = req.params;
+    const userId = res.locals.oauth.token.user.user_id;
+    
+    // Hole erst den User und seine Organisation
+    const user = await db.collection('user').findOne({ _id: new ObjectId(userId) });
+    if (!user?.organisation) {
+      return res.status(404).json({ message: 'Keine Organisation gefunden' });
+    }
+
+    // Hole den Schedule für den Monat und die Organisation
+    const schedule = await db.collection('schedules').findOne({ 
+      month,
+      organisation_id: new ObjectId(user.organisation)
+    });
+    
+    if (schedule) {
+      res.json(schedule);
+    } else {
+      res.status(404).json({ message: 'Kein Arbeitsplan für diesen Monat gefunden' });
+    }
+  } catch (error) {
+    console.error('Error fetching work schedule:', error);
+    res.status(500).json({ error: 'Interner Serverfehler' });
   }
 });
 
@@ -459,6 +490,119 @@ router.post('/check-email', async (req, res) => {
   }
 });
 
+// ************** CONFIG ROUTES **************
+
+router.put('/organization/:id/work-config', isAdminMiddleware, async (req, res) => {
+  const { id } = req.params;
+  const { workStartTime, workEndTime, workDays } = req.body;
+
+  if (!workStartTime || !workEndTime || !workDays) {
+    return res.status(400).json({ message: 'Unvollständige Konfigurationsdaten' });
+  }
+
+  try {
+    const db = req.app.get('db');
+    const result = await db.collection('organisation').updateOne(
+      { _id: new ObjectId(id) },
+      { 
+        $set: { 
+          default_config: {
+            workStartTime,
+            workEndTime,
+            workDays,
+            updatedAt: new Date()
+          }
+        } 
+      }
+    );
+
+    if (result.modifiedCount === 1) {
+      res.status(200).json({ message: 'Arbeitszeitkonfiguration erfolgreich aktualisiert' });
+    } else {
+      res.status(404).json({ error: 'Organisation nicht gefunden' });
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ message: 'Interner Serverfehler' });
+  }
+});
+
+router.post('/organization/:id/monthly-adjustment', isAdminMiddleware, async (req, res) => {
+  const { id } = req.params;
+  const { year, month, days } = req.body;
+
+  try {
+    const db = req.app.get('db');
+    
+    // Aktualisiere oder füge neue monatliche Anpassung hinzu
+    const result = await db.collection('organisation').updateOne(
+      { 
+        _id: new ObjectId(id),
+        'monthly_adjustments.month': month 
+      },
+      { 
+        $set: { 
+          'monthly_adjustments.$.year': year,
+          'monthly_adjustments.$.days': days
+        }
+      }
+    );
+
+    // Wenn keine existierende Anpassung aktualisiert wurde, füge eine neue hinzu
+    if (result.matchedCount === 0) {
+      await db.collection('organisation').updateOne(
+        { _id: new ObjectId(id) },
+        { 
+          $push: { 
+            monthly_adjustments: {
+              year,
+              month,
+              days
+            }
+          }
+        }
+      );
+    }
+
+    res.status(200).json({ message: 'Monatliche Anpassung erfolgreich gespeichert' });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ message: 'Interner Serverfehler' });
+  }
+});
+
+router.get('/organization/:id/monthly-adjustment/:month', isAdminMiddleware, async (req, res) => {
+  const { id, month } = req.params;
+
+  try {
+    const db = req.app.get('db');
+    const organisation = await db.collection('organisation').findOne(
+      { _id: new ObjectId(id) }
+    );
+
+    if (!organisation) {
+      return res.status(404).json({ message: 'Organisation nicht gefunden' });
+    }
+
+    const monthlyAdjustment = organisation.monthly_adjustments?.find(
+      adj => adj.month === month
+    );
+
+    if (monthlyAdjustment) {
+      res.json(monthlyAdjustment);
+    } else {
+      res.json({
+        year: parseInt(month.split('-')[0]),
+        month,
+        days: []
+      });
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ message: 'Interner Serverfehler' });
+  }
+});
+
 // ************** WORK SCHEDULE ROUTES **************
 
 router.post('/work-schedule', isAdminMiddleware, async (req, res) => {
@@ -467,30 +611,35 @@ router.post('/work-schedule', isAdminMiddleware, async (req, res) => {
   try {
     const db = req.app.get('db');
     
+    // Hole die Organisation des Users
+    const user = req.user;
+    const organisation = await db.collection('organisation').findOne(
+      { _id: new ObjectId(user.organisation) }
+    );
+    
+    // Verwende die gespeicherte Organisationskonfiguration
+    const workConfig = organisation?.workConfig || defaultConfig;
+    
     // Überprüfe, ob bereits ein Schedule für diesen Monat existiert
     const existingSchedule = await db.collection('schedules').findOne({ month });
     
+    const scheduleData = {
+      month,
+      schedule,
+      defaultConfig: workConfig, // Verwende die Organisations-Konfiguration
+      updatedAt: new Date()
+    };
+
     if (existingSchedule) {
       // Update existierenden Schedule
       await db.collection('schedules').updateOne(
         { month },
-        { 
-          $set: { 
-            schedule,
-            defaultConfig,
-            updatedAt: new Date()
-          } 
-        }
+        { $set: scheduleData }
       );
     } else {
       // Erstelle neuen Schedule
-      await db.collection('schedules').insertOne({
-        month,
-        schedule,
-        defaultConfig,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      });
+      scheduleData.createdAt = new Date();
+      await db.collection('schedules').insertOne(scheduleData);
     }
 
     res.status(200).json({ message: 'Arbeitszeiten erfolgreich gespeichert' });
