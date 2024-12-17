@@ -4,6 +4,7 @@ import Navigation from "../components/Navigation";
 import { Layout, Button, Typography, Space, Divider, Row, Col, message, Card, Input, Form } from 'antd';
 import './AuthPages.css';
 import VacationDatesPicker from '../components/VacationDatesPicker';
+import { use } from "react";
 
 const { Title, Text } = Typography;
 const { Content } = Layout;
@@ -13,7 +14,9 @@ export default function UserPage() {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [orgData, setOrgData] = useState(null);
-  const [form] = Form.useForm();
+  const [createOrgForm] = Form.useForm();
+  const [joinOrgForm] = Form.useForm();
+  const [adminName, setAdminName] = useState('');
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -39,6 +42,21 @@ export default function UserPage() {
           navigate('/');
         } else {
           message.error('Failed to fetch user data');
+        }
+
+        const adminResponse = await fetch('/api/user/organization-admin', {
+          headers: {  
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
+
+        if(adminResponse.ok){
+          const adminData =  await adminResponse.json();
+          setAdminName(adminData.name);
+        }else if (adminResponse.status === 404) {
+          message.info('Sie haben noch keine Organisation erstellt oder sind noch keiner Organisation beigetreten!');
+        }else {
+          message.error('Failed to fetch admin name');
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -184,7 +202,7 @@ const handleDeleteOrganisation = async () => {
 
       const token = generateToken(10);
 
-      const response = await fetch(`/api/user/${userData._id}/organisation`, {
+      const response = await fetch(`/api/user/${userData._id}/create-organisation`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -212,7 +230,7 @@ const handleDeleteOrganisation = async () => {
         organisation: data.organisationId
       }));
 
-      form.resetFields();
+      createOrgForm.resetFields();
     } catch (error) {
       console.error('Error creating organisation:', error);
       message.error('Fehler beim Erstellen der Organisation: ' + error.message);
@@ -220,7 +238,6 @@ const handleDeleteOrganisation = async () => {
   };
 
   const handleJoinOrganisation = async (values) => {
-     /*
     try {
       const accessToken = localStorage.getItem('accessToken');
       if (!accessToken) {
@@ -229,14 +246,14 @@ const handleDeleteOrganisation = async () => {
         return;
       }
 
-      const response = await fetch(`/api/user/${userData._id}/organisation`, {
-        method: 'POST',
+      const response = await fetch(`/api/user/${userData._id}/join-organisation`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}`
         },
         body: JSON.stringify({
-          token: orgData.token
+          token: values.token
         }),
       });
 
@@ -253,11 +270,12 @@ const handleDeleteOrganisation = async () => {
         ...prev,
         organisation: data.organisationId
       }));
+
+      joinOrgForm.resetFields();
     } catch (error) {
       console.error('Error joining organisation:', error);
       message.error('Fehler beim Beitritt zur Organisation: ' + error.message);
     }
-  */
   };
 
 
@@ -310,7 +328,7 @@ const handleDeleteOrganisation = async () => {
                             <Title level={3} className="auth-title">{orgData.name}</Title>
                             <Text type="secondary">{orgData.address}</Text>
                             <Divider />
-                            <Title level={3} className="auth-title">Max Mustermann</Title>
+                            <Title level={3} className="auth-title">{adminName}</Title>
                             <Text type="secondary">Administrator</Text>
                             <Button type="primary" style={{ width: '100%', marginTop: '20px' }} onClick={handleDeleteOrganisation}>Organisation löschen / austreten</Button>
                           </>
@@ -321,7 +339,7 @@ const handleDeleteOrganisation = async () => {
                         ): (
                         <>
                           <div>
-                              <Form layout="vertical" form={form} onFinish={handleCreateOrganisation}>
+                              <Form layout="vertical" form={createOrgForm} onFinish={handleCreateOrganisation}>
                                 <Form.Item
                                   name="name"
                                   rules={[{ required: true, message: 'Bitte geben Sie einen Namen ein' }]}
@@ -351,15 +369,15 @@ const handleDeleteOrganisation = async () => {
                           <Divider />
 
                           <div>
-                            <Form layout="vertical">
-                              <Form.Item>
+                            <Form layout="vertical" form={joinOrgForm} onFinish={handleJoinOrganisation}>
+                              <Form.Item name="token" rules={[{ required: true, message: 'Bitte geben Sie einen Token ein' }]}>
                                 <Input 
                                   placeholder="Organisations-TOKEN" 
                                   style={{ marginBottom: '10px' }}
                                 />
                               </Form.Item>
                               <Form.Item>
-                                <Button type="primary" style={{ width: '100%' }} onClick={handleJoinOrganisation}>
+                                <Button htmlType="submit" type="primary" style={{ width: '100%' }}>
                                   Beitreten
                                 </Button>
                               </Form.Item>

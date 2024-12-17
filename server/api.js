@@ -82,33 +82,88 @@ router.get('/user/organization', async (req, res) => {
   }
 });
 
-router.delete('/user/:id/organisation', async (req, res) => {
-  const { id } = req.params;
+router.get('/user/organization-admin', async (req, res) => {
   try {
     const db = req.app.get('db');
-    const result = await db.collection('user').updateOne(
-      { _id: new ObjectId(id) },
-      { 
-        $unset: { organisation: '' },
-        $set: { role: 'user' }
-      }
-    );
+    const userId = res.locals.oauth.token.user.user_id;
+    const user = await db.collection('user').findOne({ _id: new ObjectId(userId) });
 
-    if (result.modifiedCount === 1) {
-      res.status(200).json({ message: 'Organisation erfolgreich gelöscht' });
-    } else {
-      res.status(404).json({ error: 'Benutzer nicht gefunden' });
+    if (!user || !user.organisation) {
+      return res.status(404).json({ message: 'Keine Organisation gefunden' });
     }
+
+    const organisationId = user.organisation;
+
+    const organisationEmployees = await db.collection('user').find({ organisation: new ObjectId(organisationId) }).toArray();
+    let admin = 'Max Mustermann';
+
+    organisationEmployees.forEach(employee => {
+      if(employee.role === 'admin') {
+        admin = {
+          name: `${employee.first_name} ${employee.last_name}`
+        };
+      }
+    });
+
+    if (!admin) {
+      return res.status(404).json({ message: 'Kein Admin gefunden' });
+    }
+
+    res.json(admin);
+  } catch (error) {
+    res.status(500).json({ message: 'Interner Serverfehler' });
+  }
+})
+
+router.delete('/user/:id/organisation', async (req, res) => {
+  const { id } = req.params;
+  let adminResult, userResult, deleteOrganisation;
+
+  try {
+    const db = req.app.get('db');
+
+    const user = await db.collection('user').findOne({ _id: new ObjectId(id) });
+    if (!user) {
+      return res.status(404).json({ message: 'Benutzer nicht gefunden' });
+    }
+
+    if(user.role === 'admin') {
+      adminResult = await db.collection('user').updateMany(
+        { organisation: new ObjectId(user.organisation) },
+        { $unset: { organisation: ''},
+        $set : { role: 'user' } }
+      );
+
+      deleteOrganisation = await db.collection('organisation').deleteOne({ _id: new ObjectId(user.organisation) });
+
+      if (deleteOrganisation.deletedCount === 1 && adminResult.modifiedCount > 0) {
+        return res.status(200).json({ message: 'Gesamte Organisation erfolgreich gelöscht!' });
+      }
+    }
+
+    if(user.role === 'user') {	
+      userResult = await db.collection('user').updateOne(
+        { _id: new ObjectId(id) },
+        { $unset: { organisation: '' } }
+      );
+
+      if (userResult.modifiedCount === 1) {
+        return res.status(200).json({ message: 'Erfolgreich aus der Organisation ausgetreten!' });
+      }
+    }
+
+    return res.status(400).json({ error: 'Löschen oder austreten fehlgeschlagen!' });
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ message: 'Interner Serverfehler' });
   }
 });
 
-/*
-router.post('/user/:id/organisation', async (req, res) => {
+router.put('/user/:id/join-organisation', async (req, res) => {
     const { id } = req.params;
     const { token } = req.body;
+
+    console.log(token);
 
     if (!token) {
       return res.status(400).json({ message: 'Token erforderlich' });
@@ -140,9 +195,8 @@ router.post('/user/:id/organisation', async (req, res) => {
     res.status(500).json({ message: 'Interner Serverfehler' });
   }
 });
-*/
 
-router.put('/user/:id/organisation', async (req, res) => {
+router.put('/user/:id/create-organisation', async (req, res) => {
   const { id } = req.params;
   const { name, address, token } = req.body;
 
