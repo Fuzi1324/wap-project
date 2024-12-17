@@ -110,14 +110,14 @@ export default function Navigation() {
               </Menu.Item>
 
               <Menu.Item key="logout" onClick={handleLogout}>
-                Logout
+                Abmelden
               </Menu.Item>
 
             </>
           ) : (
             <>
             <Menu.Item key="/login">
-            <Link to="/login">Login</Link>
+            <Link to="/login">Anmelden</Link>
             </Menu.Item>
 
           <Menu.Item key="/register">

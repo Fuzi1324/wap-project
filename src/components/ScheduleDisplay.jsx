@@ -8,14 +8,12 @@ import updateLocale from 'dayjs/plugin/updateLocale';
 const { Option } = Select;
 const { Title } = Typography;
 
-// Konfiguriere dayjs
 dayjs.extend(localeData);
 dayjs.extend(updateLocale);
 dayjs.locale('de');
 
-// Aktualisiere die deutsche Lokalisierung
 dayjs.updateLocale('de', {
-  weekStart: 1, // Montag als erster Tag
+  weekStart: 1,
   weekdays: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'],
   weekdaysShort: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'],
   weekdaysMin: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'],
@@ -27,7 +25,6 @@ function ScheduleDisplay({ schedules, selectedSchedule, onScheduleSelect }) {
   const [viewMode, setViewMode] = useState('table');
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // Setze den ersten Benutzer als Standard für die Kalenderansicht
   useEffect(() => {
     if (selectedSchedule && selectedSchedule.schedule.length > 0 && !selectedUser) {
       setSelectedUser(selectedSchedule.schedule[0].userId);
@@ -53,7 +50,6 @@ function ScheduleDisplay({ schedules, selectedSchedule, onScheduleSelect }) {
     );
   }
 
-  // Erstelle Spalten für die Tabelle
   const columns = [
     {
       title: 'Mitarbeiter',
@@ -93,7 +89,6 @@ function ScheduleDisplay({ schedules, selectedSchedule, onScheduleSelect }) {
     })
   ];
 
-  // Erstelle Daten für die Tabelle
   const tableData = selectedSchedule.schedule.map((userSchedule) => ({
     key: userSchedule.userId,
     username: userSchedule.username,
@@ -101,7 +96,6 @@ function ScheduleDisplay({ schedules, selectedSchedule, onScheduleSelect }) {
     schedule: userSchedule.schedule
   }));
 
-  // Kalender-Render-Funktion
   const dateCellRender = (date) => {
     const dateStr = date.format('YYYY-MM-DD');
     const scheduleData = selectedSchedule.schedule

@@ -4,13 +4,12 @@ import Navigation from "../components/Navigation";
 import { Layout, Button, Typography, Space, Divider, Row, Col, message, Card, Input, Form } from 'antd';
 import './AuthPages.css';
 import VacationDatesPicker from '../components/VacationDatesPicker';
-import { use } from "react";
+import {CopyToClipboard} from 'react-copy-to-clipboard';
 
 const { Title, Text } = Typography;
 const { Content } = Layout;
 
 export default function UserPage() {
-  const { id } = useParams();
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [orgData, setOrgData] = useState(null);
@@ -333,7 +332,26 @@ const handleDeleteOrganisation = async () => {
                             <Divider />
                             {userData.role === 'admin' ? (
                               <>
-                                <Title level={3} className="auth-title">{orgData.token}</Title>
+                                <div className="token-container">
+                                  <Title level={3} className="auth-title mb-0">{orgData.token}</Title>
+                                  <CopyToClipboard text={orgData.token} onCopy={() => this.setState({copied: true})}>
+                                    <button className="copy-button">
+                                      <svg 
+                                        xmlns="http://www.w3.org/2000/svg" 
+                                        viewBox="0 0 24 24" 
+                                        fill="none" 
+                                        stroke="currentColor" 
+                                        strokeWidth="2" 
+                                        strokeLinecap="round" 
+                                        strokeLinejoin="round"
+                                        className="copy-icon"
+                                      >
+                                        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                                        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                                      </svg>
+                                    </button>
+                                  </CopyToClipboard>
+                                </div>
                                 <Text type="secondary">Organisations-TOKEN</Text>
                               </>
                             ) : (

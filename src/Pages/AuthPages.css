@@ -134,6 +134,40 @@
     gap: 12px;
     margin: 16px 0;
   }
+
+  .token-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+    justify-content: center; 
+  }
+  
+  .copy-button {
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .copy-button:hover {
+    background-color: #f3f4f6;
+  }
+  
+  .copy-icon {
+    color: #6b7280;
+    width: 20px;
+    height: 20px;
+  }
+  
+  .copy-button:hover .copy-icon {
+    color: #374151;
+  }
   
   /* Responsive adjustments */
   @media (max-width: 768px) {
