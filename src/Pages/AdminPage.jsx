@@ -72,21 +72,33 @@ function AdminPage() {
         navigate('/login');
         return;
       }
-      const res = await fetch('/api/all-users', {
+      
+      const res = await fetch('/api/organization/users', {
         headers: {
           'Authorization': `Bearer ${accessToken}`
         }
       });
+  
+      if (!res.ok) {
+        if (res.status === 404) {
+          message.error('Keine Organisation gefunden');
+        } else {
+          message.error('Fehler beim Laden der Mitarbeiterdaten');
+        }
+        return;
+      }
+  
       const data = await res.json();
-      const usersWithHours = data.map((user) => ({
+      const usersWithDefaults = data.map((user) => ({
         ...user,
         weeklyHours: user.weeklyHours || '',
-        vacationWeeks: user.vacationWeeks || 5,
-        vacationDates: user.vacationDates || [],
+        vacationDays: user.vacationDays || 25,
       }));
-      setUsers(usersWithHours);
+      
+      setUsers(usersWithDefaults);
     } catch (error) {
       console.error('Error fetching users:', error);
+      message.error('Fehler beim Laden der Mitarbeiterdaten');
     }
   };
 

@@ -1,6 +1,9 @@
-import React from 'react';
-import { List, Input, Space } from 'antd';
+import React, { useState } from 'react';
+import { List, Input, Space, Table, Typography, Tag } from 'antd';
 import dayjs from 'dayjs';
+
+const { Search } = Input;
+const { Text } = Typography;
 
 const EmployeeList = ({ 
   users, 
@@ -8,82 +11,104 @@ const EmployeeList = ({
   onSaveWeeklyHours,
   onVacationDaysChange,
   onSaveVacationDays,
-  onVacationDatesChange,
-  onSaveVacationDates 
 }) => {
-  const handleWeeklyHoursChange = async (userId, value) => {
-    // Aktualisiere die UI
-    onWeeklyHoursChange(userId, value);
-    // Speichere sofort in der Datenbank
-    await onSaveWeeklyHours(userId, value);
-  };
+  const [searchText, setSearchText] = useState('');
 
-  const handleVacationDaysChange = async (userId, value) => {
-    // Aktualisiere die UI
-    onVacationDaysChange(userId, value);
-    // Speichere sofort in der Datenbank
-    await onSaveVacationDays(userId, value);
-  };
+  const columns = [
+    {
+      title: 'Name',
+      key: 'name',
+      sorter: (a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`),
+      render: (_, record) => (
+        <Space>
+          {`${record.first_name} ${record.last_name}`}
+          {record.role === 'admin' && <Tag color="blue">Admin</Tag>}
+        </Space>
+      ),
+      filteredValue: [searchText],
+      onFilter: (value, record) => 
+        `${record.first_name} ${record.last_name}`
+          .toLowerCase()
+          .includes(value.toLowerCase())
+    },
+    {
+      title: 'Wochenstunden',
+      dataIndex: 'weeklyHours',
+      key: 'weeklyHours',
+      width: 150,
+      sorter: (a, b) => (a.weeklyHours || 0) - (b.weeklyHours || 0),
+      render: (text, record) => (
+        <Input
+          type="number"
+          value={text || ''}
+          onChange={(e) => {
+            onWeeklyHoursChange(record._id, e.target.value);
+            onSaveWeeklyHours(record._id, e.target.value);
+          }}
+          style={{ width: 100 }}
+        />
+      )
+    },
+    {
+      title: 'Urlaubstage',
+      dataIndex: 'vacationDays',
+      key: 'vacationDays',
+      width: 150,
+      sorter: (a, b) => (a.vacationDays || 0) - (b.vacationDays || 0),
+      render: (text, record) => (
+        <Input
+          type="number"
+          value={text || 25}
+          onChange={(e) => {
+            onVacationDaysChange(record._id, e.target.value);
+            onSaveVacationDays(record._id, e.target.value);
+          }}
+          style={{ width: 100 }}
+        />
+      )
+    },
+    {
+      title: 'Geplanter Urlaub',
+      key: 'vacationPeriods',
+      render: (_, record) => {
+        const periods = record.vacationPeriods || [];
 
-  const handleVacationDatesChange = async (userId, dates) => {
-    // Aktualisiere die UI
-    onVacationDatesChange(userId, dates);
-    // Speichere sofort in der Datenbank
-    await onSaveVacationDates(userId, dates);
-  };
+        return (
+          <Space direction="vertical" size="small">
+            {periods.map((period, idx) => (
+              <Tag key={idx} color="orange">
+                {dayjs(period.startDate).format('DD.MM')} - {dayjs(period.endDate).format('DD.MM.YY')}
+              </Tag>
+            ))}
+          </Space>
+        );
+      }
+    }
+  ];
 
   return (
-    <div>
-      <List
-        itemLayout="vertical"
+    <div style={{ width: '100%' }}>
+      <div style={{ marginBottom: 16 }}>
+        <Search
+          placeholder="Mitarbeiter suchen..."
+          onChange={e => setSearchText(e.target.value)}
+          style={{ maxWidth: 400 }}
+        />
+        <Text style={{ marginLeft: 16, color: 'rgba(0, 0, 0, 0.45)' }}>
+          {users.length} Mitarbeiter gesamt
+        </Text>
+      </div>
+
+      <Table 
+        columns={columns}
         dataSource={users}
-        renderItem={user => (
-          <List.Item key={user._id}>
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <div>
-                <strong>Name:</strong> {user.first_name} {user.last_name}
-              </div>
-              <div>
-                <strong>Wochenstunden:</strong>
-                <Input
-                  type="number"
-                  value={user.weeklyHours || ''}
-                  onChange={(e) => handleWeeklyHoursChange(user._id, e.target.value)}
-                  style={{ width: 100, marginLeft: 8 }}
-                />
-              </div>
-              <div>
-                <strong>Urlaubstage:</strong>
-                <Input
-                  type="number"
-                  value={user.vacationDays || 25}
-                  onChange={(e) => handleVacationDaysChange(user._id, e.target.value)}
-                  style={{ width: 100, marginLeft: 8 }}
-                />
-              </div>
-              <div>
-                <strong>Geplante Urlaubstage:</strong>
-                {user.vacationPeriods && user.vacationPeriods.length > 0 ? (
-                  <List
-                    size="small"
-                    dataSource={user.vacationPeriods.sort((a, b) => 
-                      dayjs(a.startDate).valueOf() - dayjs(b.startDate).valueOf()
-                    )}
-                    renderItem={(period) => (
-                      <List.Item>
-                        {dayjs(period.startDate).format('DD.MM.YYYY')} - {dayjs(period.endDate).format('DD.MM.YYYY')}
-                        {period.startDate === period.endDate ? ' (1 Tag)' : 
-                         ` (${dayjs(period.endDate).diff(dayjs(period.startDate), 'days') + 1} Tage)`}
-                      </List.Item>
-                    )}
-                  />
-                ) : (
-                  <span style={{ marginLeft: 8 }}>Keine Urlaubstage eingetragen</span>
-                )}
-              </div>
-            </Space>
-          </List.Item>
-        )}
+        rowKey="_id"
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showTotal: (total, range) => `${range[0]}-${range[1]} von ${total} Mitarbeitern`
+        }}
+        scroll={{ x: 'max-content' }}
       />
     </div>
   );
