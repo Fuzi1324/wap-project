@@ -18,7 +18,7 @@ function App() {
             Der Dienstplaner ist eine moderne Webanwendung zur effizienten Verwaltung von Mitarbeiterdienstplänen.
             Mit dieser Anwendung können Sie:
           </Text>
-          <ul>
+          <ul className='homepage-ul'>
             <li>Arbeitszeiten und Urlaubstage einfach verwalten</li>
             <li>Dienstpläne automatisch generieren lassen</li>
             <li>Urlaubsanträge digital einreichen und verwalten</li>

@@ -330,6 +330,15 @@ const handleDeleteOrganisation = async () => {
                             <Divider />
                             <Title level={3} className="auth-title">{adminName}</Title>
                             <Text type="secondary">Administrator</Text>
+                            <Divider />
+                            {userData.role === 'admin' ? (
+                              <>
+                                <Title level={3} className="auth-title">{orgData.token}</Title>
+                                <Text type="secondary">Organisations-TOKEN</Text>
+                              </>
+                            ) : (
+                              <p></p>
+                            )}
                             <Button type="primary" style={{ width: '100%', marginTop: '20px' }} onClick={handleDeleteOrganisation}>Organisation löschen / austreten</Button>
                           </>
                         ) : (
