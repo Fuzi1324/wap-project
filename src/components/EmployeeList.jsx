@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { List, Input, Space, Table, Typography, Tag } from 'antd';
+import { useState } from 'react';
+import { Input, Space, Table, Typography, Tag } from 'antd';
 import dayjs from 'dayjs';
 
 const { Search } = Input;

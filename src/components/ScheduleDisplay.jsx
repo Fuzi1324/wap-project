@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Table, Calendar, Select, Radio, Card, Typography, Tag, Tooltip } from 'antd';
+import { useState, useEffect } from 'react';
+import { Table, Calendar, Select, Radio, Typography, Tag, Tooltip } from 'antd';
 import dayjs from 'dayjs';
 import 'dayjs/locale/de';
 import localeData from 'dayjs/plugin/localeData';
@@ -29,7 +29,7 @@ function ScheduleDisplay({ schedules, selectedSchedule, onScheduleSelect }) {
     if (selectedSchedule && selectedSchedule.schedule.length > 0 && !selectedUser) {
       setSelectedUser(selectedSchedule.schedule[0].userId);
     }
-  }, [selectedSchedule]);
+  }, [selectedSchedule, selectedUser]);
 
   if (!selectedSchedule) {
     return (

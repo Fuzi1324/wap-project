@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import EmployeeList from '../components/EmployeeList';
 import GeneralConfig from '../components/GeneralConfig';
 import ScheduleDisplay from '../components/ScheduleDisplay';
 import Navigation from '../components/Navigation';
-import { Layout, Button, Typography, Space, Divider, Row, Col, message, Card } from 'antd';
+import { Layout, Button, Typography, Space, Divider, message, Card } from 'antd';
 import './AuthPages.css';
 import { useNavigate } from 'react-router-dom';
 
@@ -16,15 +16,9 @@ function AdminPage() {
   const [workDays, setWorkDays] = useState(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
   const [schedules, setSchedules] = useState([]);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
+  const [organisationId, setOrganizationId] = useState(null);
 
   const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchIfLoggedIn();
-    fetchIfUserIsAdmin();
-    fetchUsers();
-    fetchSchedules();
-  }, [navigate]);
 
   const fetchIfLoggedIn = async () => {
     try {
@@ -89,6 +83,7 @@ function AdminPage() {
       }
   
       const data = await res.json();
+      setOrganizationId(data._id);
       const usersWithDefaults = data.map((user) => ({
         ...user,
         weeklyHours: user.weeklyHours || '',
@@ -102,7 +97,7 @@ function AdminPage() {
     }
   };
 
-  const fetchSchedules = async () => {
+  const loadOrganizationAndSchedules = async () => {
     try {
       const accessToken = localStorage.getItem('accessToken');
       if (!accessToken) {
@@ -110,24 +105,49 @@ function AdminPage() {
         navigate('/login');
         return;
       }
-      const res = await fetch('/api/all-schedules', {
+  
+      const orgResponse = await fetch('/api/user/organization', {
         headers: {
           'Authorization': `Bearer ${accessToken}`
         }
       });
-      const data = await res.json();
-      setSchedules(data);
-      if (data.length > 0) {
-        setSelectedSchedule(data[0]);
-        const latestSchedule = data[0];
-        setWorkStartTime(latestSchedule.workStartTime || '09:00');
-        setWorkEndTime(latestSchedule.workEndTime || '17:00');
-        setWorkDays(latestSchedule.workDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
+      
+      if (!orgResponse.ok) {
+        throw new Error('Fehler beim Laden der Organisation');
       }
+      
+      const orgData = await orgResponse.json();
+      
+      if (!orgData._id) {
+        throw new Error('Keine Organizations-ID gefunden');
+      }
+  
+      const schedulesResponse = await fetch(`/api/organization/${orgData._id}/schedules`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+  
+      if (!schedulesResponse.ok) {
+        throw new Error('Fehler beim Laden der Schedules');
+      }
+  
+      const schedulesData = await schedulesResponse.json();
+      setSchedules(schedulesData);
+  
     } catch (error) {
-      console.error('Error fetching schedules:', error);
+      console.error('Error:', error);
+      message.error(error.message);
     }
   };
+
+    useEffect(() => {
+    fetchIfLoggedIn();
+    fetchIfUserIsAdmin();
+    fetchUsers();
+    loadOrganizationAndSchedules();
+  }, [navigate]);
+
 
   const handleWeeklyHoursChange = (userId, weeklyHours) => {
     setUsers(users.map(user => user._id === userId ? { ...user, weeklyHours: parseInt(weeklyHours, 10) } : user));
@@ -296,7 +316,7 @@ function AdminPage() {
       }
 
       message.success('Dienstplan erfolgreich generiert');
-      await fetchSchedules();
+      await loadOrganizationAndSchedules();
     } catch (error) {
       console.error('Error generating schedule:', error);
       message.error('Failed to generate schedule: ' + error.message);
