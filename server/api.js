@@ -96,6 +96,208 @@ router.get('/user/me', async (req, res) => {
   }
 });
 
+// ************** SCHEDULE ROUTES **************
+
+router.post('/generate-schedule', isAdminMiddleware, async (req, res) => {
+  const { month, users } = req.body;
+
+  if (!month || !users) {
+    return res.status(400).json({ error: 'Monat und Benutzerdaten sind erforderlich' });
+  }
+
+  try {
+    const db = req.app.get('db');
+    
+    const user = req.user;
+    const organisation = await db.collection('organisation').findOne(
+      { _id: new ObjectId(user.organisation) }
+    );
+    
+    if (!organisation || !organisation.default_config) {
+      return res.status(400).json({ error: 'Keine Organisationskonfiguration gefunden' });
+    }
+
+    const monthlyAdjustment = organisation.monthly_adjustments?.find(
+      adj => adj.month === month
+    );
+
+    const generatedSchedule = users.map(user => {
+      const vacationDates = getVacationDaysFromPeriods(user.vacationPeriods);
+      const weeklyHours = user.weeklyHours || 40;
+      const workingDaysCount = organisation.default_config.workDays.length;
+      const targetDailyHours = weeklyHours / workingDaysCount;
+
+      const monthStart = new Date(month + '-01');
+      const monthEnd = new Date(new Date(monthStart).setMonth(monthStart.getMonth() + 1));
+      const schedule = [];
+
+      for (let date = new Date(monthStart); date < monthEnd; date.setDate(date.getDate() + 1)) {
+        const dateStr = date.toISOString().split('T')[0];
+        const dayName = date.toLocaleString('en-US', { weekday: 'long' });
+        const isDefaultWorkDay = organisation.default_config.workDays.includes(dayName);
+        
+        const dayAdjustment = monthlyAdjustment?.days.find(day => day.date === dateStr);
+        const isVacationDay = vacationDates.includes(dateStr);
+
+        let daySchedule = {
+          date: dateStr,
+          start: null,
+          end: null,
+          hours: 0,
+          isVacationDay,
+          isWorkDay: false
+        };
+
+        if (!isVacationDay) {
+          if (dayAdjustment) {
+            if (dayAdjustment.isWorkDay) {
+              const adjustedTime = calculateAdjustedWorkTime(
+                dayAdjustment.startTime,
+                dayAdjustment.endTime,
+                targetDailyHours
+              );
+              daySchedule = {
+                ...daySchedule,
+                start: adjustedTime.start,
+                end: adjustedTime.end,
+                hours: targetDailyHours,
+                isWorkDay: true
+              };
+            }
+          } else if (isDefaultWorkDay) {
+            const adjustedTime = calculateAdjustedWorkTime(
+              organisation.default_config.workStartTime,
+              organisation.default_config.workEndTime,
+              targetDailyHours
+            );
+            daySchedule = {
+              ...daySchedule,
+              start: adjustedTime.start,
+              end: adjustedTime.end,
+              hours: targetDailyHours,
+              isWorkDay: true
+            };
+          }
+        }
+
+        schedule.push(daySchedule);
+      }
+
+      const totalHours = schedule.reduce((sum, day) => sum + day.hours, 0);
+
+      return {
+        userId: user._id,
+        username: `${user.first_name} ${user.last_name}`,
+        weeklyHours,
+        totalHours: Math.round(totalHours * 100) / 100,
+        schedule
+      };
+    });
+
+    const result = await db.collection('schedules').insertOne({
+      month,
+      organisation_id: organisation._id,
+      generatedAt: new Date(),
+      schedule: generatedSchedule
+    });
+
+    res.json({ 
+      message: 'Dienstplan erfolgreich generiert',
+      scheduleId: result.insertedId 
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Fehler bei der Dienstplangenerierung' });
+  }
+});
+
+// ************** TIME MANAGEMENT ROUTES **************
+
+router.put('/user/:id/weeklyHours', isAdminMiddleware, async (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { weeklyHours } = req.body;
+    const userId = req.params.id;
+
+    const result = await db.collection('user').updateOne(
+      { _id: new ObjectId(userId) },
+      { $set: { weeklyHours: parseInt(weeklyHours, 10) } }
+    );
+
+    if (result.modifiedCount === 1) {
+      res.json({ message: 'Wochenstunden erfolgreich aktualisiert' });
+    } else {
+      res.status(404).json({ error: 'Benutzer nicht gefunden' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Fehler beim Aktualisieren der Wochenstunden' });
+  }
+});
+
+router.put('/user/:id/vacation-periods', async (req, res) => {
+  const { id } = req.params;
+  const { vacationPeriods } = req.body;
+
+  if (!vacationPeriods || !Array.isArray(vacationPeriods)) {
+    return res.status(400).json({ message: 'Ungültige Urlaubsdaten' });
+  }
+
+  try {
+    const db = req.app.get('db');
+    const result = await db.collection('user').updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { vacationPeriods: vacationPeriods } }
+    );
+
+    if (result.modifiedCount === 1) {
+      res.status(200).json({ message: 'Urlaubsperioden erfolgreich aktualisiert' });
+    } else {
+      res.status(404).json({ error: 'Benutzer nicht gefunden' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Interner Serverfehler' });
+  }
+});
+
+router.delete('/user/:id/vacation-periods', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const db = req.app.get('db');
+    const result = await db.collection('user').updateOne(
+      { _id: new ObjectId(id) },
+      { $unset: { vacationPeriods: '' } }
+    );
+
+    if (result.modifiedCount === 1) {
+      res.status(200).json({ message: 'Urlaubsperioden erfolgreich gelöscht' });
+    } else {
+      res.status(404).json({ error: 'Benutzer nicht gefunden' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Interner Serverfehler' });
+  }
+});
+
+router.put('/user/:id/vacation-days', isAdminMiddleware, async (req, res) => {
+  const { vacationDays } = req.body;
+  try {
+    const db = req.app.get('db');
+    const result = await db.collection('user').updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: { vacationDays: parseInt(vacationDays, 10) } }
+    );
+
+    if (result.modifiedCount === 1) {
+      res.json({ message: 'Urlaubstage erfolgreich aktualisiert' });
+    } else {
+      res.status(404).json({ error: 'Benutzer nicht gefunden' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Fehler beim Aktualisieren der Urlaubstage' });
+  }
+});
+
+// ************** Organisation ROUTES **************
+
 router.get('/user/organization', async (req, res) => {
   try {
     const db = req.app.get('db');
@@ -281,263 +483,6 @@ router.put('/user/:id/create-organisation', async (req, res) => {
   }
 });
 
-// ************** SCHEDULE ROUTES **************
-
-router.post('/generate-schedule', isAdminMiddleware, async (req, res) => {
-  const { month, users } = req.body;
-
-  if (!month || !users) {
-    return res.status(400).json({ error: 'Monat und Benutzerdaten sind erforderlich' });
-  }
-
-  try {
-    const db = req.app.get('db');
-    
-    const user = req.user;
-    const organisation = await db.collection('organisation').findOne(
-      { _id: new ObjectId(user.organisation) }
-    );
-    
-    if (!organisation || !organisation.default_config) {
-      return res.status(400).json({ error: 'Keine Organisationskonfiguration gefunden' });
-    }
-
-    const monthlyAdjustment = organisation.monthly_adjustments?.find(
-      adj => adj.month === month
-    );
-
-    const generatedSchedule = users.map(user => {
-      const vacationDates = getVacationDaysFromPeriods(user.vacationPeriods);
-      const weeklyHours = user.weeklyHours || 40;
-      const workingDaysCount = organisation.default_config.workDays.length;
-      const targetDailyHours = weeklyHours / workingDaysCount;
-
-      const monthStart = new Date(month + '-01');
-      const monthEnd = new Date(new Date(monthStart).setMonth(monthStart.getMonth() + 1));
-      const schedule = [];
-
-      for (let date = new Date(monthStart); date < monthEnd; date.setDate(date.getDate() + 1)) {
-        const dateStr = date.toISOString().split('T')[0];
-        const dayName = date.toLocaleString('en-US', { weekday: 'long' });
-        const isDefaultWorkDay = organisation.default_config.workDays.includes(dayName);
-        
-        const dayAdjustment = monthlyAdjustment?.days.find(day => day.date === dateStr);
-        const isVacationDay = vacationDates.includes(dateStr);
-
-        let daySchedule = {
-          date: dateStr,
-          start: null,
-          end: null,
-          hours: 0,
-          isVacationDay,
-          isWorkDay: false
-        };
-
-        if (!isVacationDay) {
-          if (dayAdjustment) {
-            if (dayAdjustment.isWorkDay) {
-              const adjustedTime = calculateAdjustedWorkTime(
-                dayAdjustment.startTime,
-                dayAdjustment.endTime,
-                targetDailyHours
-              );
-              daySchedule = {
-                ...daySchedule,
-                start: adjustedTime.start,
-                end: adjustedTime.end,
-                hours: targetDailyHours,
-                isWorkDay: true
-              };
-            }
-          } else if (isDefaultWorkDay) {
-            const adjustedTime = calculateAdjustedWorkTime(
-              organisation.default_config.workStartTime,
-              organisation.default_config.workEndTime,
-              targetDailyHours
-            );
-            daySchedule = {
-              ...daySchedule,
-              start: adjustedTime.start,
-              end: adjustedTime.end,
-              hours: targetDailyHours,
-              isWorkDay: true
-            };
-          }
-        }
-
-        schedule.push(daySchedule);
-      }
-
-      const totalHours = schedule.reduce((sum, day) => sum + day.hours, 0);
-
-      return {
-        userId: user._id,
-        username: `${user.first_name} ${user.last_name}`,
-        weeklyHours,
-        totalHours: Math.round(totalHours * 100) / 100,
-        schedule
-      };
-    });
-
-    const result = await db.collection('schedules').insertOne({
-      month,
-      organisation_id: organisation._id,
-      generatedAt: new Date(),
-      schedule: generatedSchedule
-    });
-
-    res.json({ 
-      message: 'Dienstplan erfolgreich generiert',
-      scheduleId: result.insertedId 
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Fehler bei der Dienstplangenerierung' });
-  }
-});
-
-router.get('/work-schedule/:month', async (req, res) => {
-  try {
-    const db = req.app.get('db');
-    const { month } = req.params;
-    const userId = res.locals.oauth.token.user.user_id;
-    
-    const user = await db.collection('user').findOne({ _id: new ObjectId(userId) });
-    if (!user?.organisation) {
-      return res.status(404).json({ message: 'Keine Organisation gefunden' });
-    }
-
-    const schedule = await db.collection('schedules').findOne({ 
-      month,
-      organisation_id: new ObjectId(user.organisation)
-    });
-    
-    if (schedule) {
-      res.json(schedule);
-    } else {
-      res.status(404).json({ message: 'Kein Arbeitsplan für diesen Monat gefunden' });
-    }
-  } catch (error) {
-    res.status(500).json({ error: 'Interner Serverfehler' });
-  }
-});
-
-router.get('/latest-schedule', async (req, res) => {
-  try {
-    const db = req.app.get('db');
-    const latestSchedule = await db.collection('schedules')
-      .find({})
-      .sort({ generatedAt: -1 })
-      .limit(1)
-      .toArray();
-
-    if (latestSchedule.length > 0) {
-      res.json(latestSchedule[0]);
-    } else {
-      res.status(404).json({ message: 'Kein Dienstplan gefunden' });
-    }
-  } catch (error) {
-    res.status(500).json({ error: 'Fehler beim Abrufen des letzten Dienstplans' });
-  }
-});
-
-router.get('/all-schedules', async (req, res) => {
-  try {
-    const db = req.app.get('db');
-    const schedules = await db.collection('schedules').find({}).sort({ generatedAt: -1 }).toArray();
-    res.json(schedules);
-  } catch (error) {
-    res.status(500).json({ message: 'Interner Serverfehler' });
-  }
-});
-
-// ************** TIME MANAGEMENT ROUTES **************
-
-router.put('/user/:id/weeklyHours', isAdminMiddleware, async (req, res) => {
-  try {
-    const db = req.app.get('db');
-    const { weeklyHours } = req.body;
-    const userId = req.params.id;
-
-    const result = await db.collection('user').updateOne(
-      { _id: new ObjectId(userId) },
-      { $set: { weeklyHours: parseInt(weeklyHours, 10) } }
-    );
-
-    if (result.modifiedCount === 1) {
-      res.json({ message: 'Wochenstunden erfolgreich aktualisiert' });
-    } else {
-      res.status(404).json({ error: 'Benutzer nicht gefunden' });
-    }
-  } catch (error) {
-    res.status(500).json({ error: 'Fehler beim Aktualisieren der Wochenstunden' });
-  }
-});
-
-router.put('/user/:id/vacation-periods', async (req, res) => {
-  const { id } = req.params;
-  const { vacationPeriods } = req.body;
-
-  if (!vacationPeriods || !Array.isArray(vacationPeriods)) {
-    return res.status(400).json({ message: 'Ungültige Urlaubsdaten' });
-  }
-
-  try {
-    const db = req.app.get('db');
-    const result = await db.collection('user').updateOne(
-      { _id: new ObjectId(id) },
-      { $set: { vacationPeriods: vacationPeriods } }
-    );
-
-    if (result.modifiedCount === 1) {
-      res.status(200).json({ message: 'Urlaubsperioden erfolgreich aktualisiert' });
-    } else {
-      res.status(404).json({ error: 'Benutzer nicht gefunden' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: 'Interner Serverfehler' });
-  }
-});
-
-router.delete('/user/:id/vacation-periods', async (req, res) => {
-  const { id } = req.params;
-  try {
-    const db = req.app.get('db');
-    const result = await db.collection('user').updateOne(
-      { _id: new ObjectId(id) },
-      { $unset: { vacationPeriods: '' } }
-    );
-
-    if (result.modifiedCount === 1) {
-      res.status(200).json({ message: 'Urlaubsperioden erfolgreich gelöscht' });
-    } else {
-      res.status(404).json({ error: 'Benutzer nicht gefunden' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: 'Interner Serverfehler' });
-  }
-});
-
-router.put('/user/:id/vacation-days', isAdminMiddleware, async (req, res) => {
-  const { vacationDays } = req.body;
-  try {
-    const db = req.app.get('db');
-    const result = await db.collection('user').updateOne(
-      { _id: new ObjectId(req.params.id) },
-      { $set: { vacationDays: parseInt(vacationDays, 10) } }
-    );
-
-    if (result.modifiedCount === 1) {
-      res.json({ message: 'Urlaubstage erfolgreich aktualisiert' });
-    } else {
-      res.status(404).json({ error: 'Benutzer nicht gefunden' });
-    }
-  } catch (error) {
-    res.status(500).json({ error: 'Fehler beim Aktualisieren der Urlaubstage' });
-  }
-});
-
-// ************** CONFIG ROUTES **************
-
 router.put('/organization/:id/work-config', isAdminMiddleware, async (req, res) => {
   const { id } = req.params;
   const { workStartTime, workEndTime, workDays } = req.body;
@@ -639,6 +584,23 @@ router.get('/organization/:id/monthly-adjustment/:month', isAdminMiddleware, asy
         days: []
       });
     }
+  } catch (error) {
+    res.status(500).json({ message: 'Interner Serverfehler' });
+  }
+});
+
+router.get('/organization/:id/schedules', async (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const organisation_id = req.params.id;
+
+    const schedules = await db.collection('schedules')
+      .find({ 
+        organisation_id: new ObjectId(organisation_id) 
+      })
+      .toArray();
+    
+    res.json(schedules);
   } catch (error) {
     res.status(500).json({ message: 'Interner Serverfehler' });
   }

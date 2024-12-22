@@ -1,16 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { Calendar, TimePicker, Select, Divider, message, Tag } from 'antd';
 import dayjs from 'dayjs';
 import 'dayjs/locale/de';
 import localeData from 'dayjs/plugin/localeData';
 import updateLocale from 'dayjs/plugin/updateLocale';
 
-// Dayjs Konfiguration
 dayjs.extend(localeData);
 dayjs.extend(updateLocale);
 dayjs.locale('de');
 
-// Deutsche Lokalisierung
 const DE_LOCALE = {
   weekStart: 1,
   weekdays: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'],
@@ -61,13 +60,61 @@ function GeneralConfig({ workStartTime, setWorkStartTime, workEndTime, setWorkEn
   const [selectedDates, setSelectedDates] = useState(new Map());
   const [selectedDate, setSelectedDate] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(dayjs());
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [organisationId, setOrganisationId] = useState(null);
 
   const defaultStartTime = dayjs(workStartTime, 'HH:mm');
   const defaultEndTime = dayjs(workEndTime, 'HH:mm');
 
-  // API Funktionen
+  useEffect(() => {
+    const loadMonthlyAdjustment = async () => {
+      if (organisationId) {
+        const adjustment = await fetchMonthlyAdjustment(currentMonth);
+        const dates = processMonthlyAdjustment(adjustment);
+        setSelectedDates(dates);
+      }
+    };
+
+    loadMonthlyAdjustment();
+  }, [currentMonth, organisationId]);
+
+  useEffect(() => {
+    const loadOrganization = async () => {
+      try {
+        const response = await fetch('/api/user/organization', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        });
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            return;
+          }
+          throw new Error('Fehler beim Laden der Organisation');
+        }
+        
+        const data = await response.json();
+        
+        if (data._id) {
+          setOrganisationId(data._id);
+          
+          if (data.default_config) {
+            setWorkStartTime(data.default_config.workStartTime);
+            setWorkEndTime(data.default_config.workEndTime);
+            setWorkDays(data.default_config.workDays);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading organization:', error);
+        if (!error.message.includes('404')) {
+          message.error('Fehler beim Laden der Organisation');
+        }
+      }
+    };
+    
+    loadOrganization();
+  }, []);
+
   const fetchMonthlyAdjustment = async (month) => {
     try {
       const response = await fetch(
@@ -99,7 +146,7 @@ function GeneralConfig({ workStartTime, setWorkStartTime, workEndTime, setWorkEn
 
     try {
       const adjustmentToSave = Array.from(adjustmentData.entries())
-        .filter(([_, times]) => !times.isDefault) // Nur nicht-Standard Tage speichern
+        .filter(([_, times]) => !times.isDefault)
         .map(([date, times]) => ({
           date,
           startTime: times.start?.format('HH:mm'),
@@ -129,7 +176,6 @@ function GeneralConfig({ workStartTime, setWorkStartTime, workEndTime, setWorkEn
     }
   };
 
-  // Hilfsfunktionen
   const createDefaultSchedule = (startTime = defaultStartTime, endTime = defaultEndTime, selectedWorkDays = workDays) => {
     const newSelectedDates = new Map();
     const startDate = currentMonth.startOf('month');
@@ -170,7 +216,6 @@ function GeneralConfig({ workStartTime, setWorkStartTime, workEndTime, setWorkEn
     return newSelectedDates;
   };
 
-  // Event Handler
   const handleDateSelect = (date) => {
     setSelectedDate(date);
     const dateKey = date.format('YYYY-MM-DD');
@@ -241,7 +286,6 @@ function GeneralConfig({ workStartTime, setWorkStartTime, workEndTime, setWorkEn
       
       setWorkDays(newWorkDays);
       
-      // Aktualisiere den Kalender mit den neuen Standardtagen
       const newDates = createDefaultSchedule(defaultStartTime, defaultEndTime, newWorkDays);
       setSelectedDates(newDates);
       saveMonthlyAdjustment(newDates);
@@ -276,7 +320,6 @@ function GeneralConfig({ workStartTime, setWorkStartTime, workEndTime, setWorkEn
       setWorkStartTime(newStartTime.format('HH:mm'));
       setWorkEndTime(newEndTime.format('HH:mm'));
       
-      // Aktualisiere den Kalender mit den neuen Standardzeiten
       const newDates = createDefaultSchedule(newStartTime, newEndTime, workDays);
       setSelectedDates(newDates);
       saveMonthlyAdjustment(newDates);
@@ -286,7 +329,6 @@ function GeneralConfig({ workStartTime, setWorkStartTime, workEndTime, setWorkEn
     }
   };
 
-  // Render Funktionen
   const renderDateCell = (date) => {
     const dateKey = date.format('YYYY-MM-DD');
     const dateSchedule = selectedDates.get(dateKey);
@@ -318,58 +360,6 @@ function GeneralConfig({ workStartTime, setWorkStartTime, workEndTime, setWorkEn
       </div>
     );
   };
-
-  // Effects
-  useEffect(() => {
-    const loadMonthlyAdjustment = async () => {
-      if (organisationId) {
-        const adjustment = await fetchMonthlyAdjustment(currentMonth);
-        const dates = processMonthlyAdjustment(adjustment);
-        setSelectedDates(dates);
-        setIsInitialLoad(false);
-      }
-    };
-
-    loadMonthlyAdjustment();
-  }, [currentMonth, organisationId]);
-
-  useEffect(() => {
-    const loadOrganization = async () => {
-      try {
-        const response = await fetch('/api/user/organization', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-          }
-        });
-        
-        if (!response.ok) {
-          if (response.status === 404) {
-            return;
-          }
-          throw new Error('Fehler beim Laden der Organisation');
-        }
-        
-        const data = await response.json();
-        
-        if (data._id) {
-          setOrganisationId(data._id);
-          
-          if (data.default_config) {
-            setWorkStartTime(data.default_config.workStartTime);
-            setWorkEndTime(data.default_config.workEndTime);
-            setWorkDays(data.default_config.workDays);
-          }
-        }
-      } catch (error) {
-        console.error('Error loading organization:', error);
-        if (!error.message.includes('404')) {
-          message.error('Fehler beim Laden der Organisation');
-        }
-      }
-    };
-    
-    loadOrganization();
-  }, []);
 
   return (
     <div className="general-config">
@@ -436,5 +426,14 @@ function GeneralConfig({ workStartTime, setWorkStartTime, workEndTime, setWorkEn
     </div>
   );
 }
+
+GeneralConfig.propTypes = {
+  workStartTime: PropTypes.string.isRequired,
+  setWorkStartTime: PropTypes.func.isRequired,
+  workEndTime: PropTypes.string.isRequired,
+  setWorkEndTime: PropTypes.func.isRequired,
+  workDays: PropTypes.arrayOf(PropTypes.string).isRequired,
+  setWorkDays: PropTypes.func.isRequired,
+};
 
 export default GeneralConfig;

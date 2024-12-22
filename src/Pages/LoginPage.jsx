@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navigation from '../components/Navigation';
-import { Layout, Form, Input, Button, Typography, message, Space } from 'antd';
+import { Layout, Form, Input, Button, Typography, message } from 'antd';
 import './AuthPages.css';
 
 const { Content } = Layout;
@@ -12,7 +12,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async () => {
     try {
       const formData = new URLSearchParams();
       formData.append('grant_type', 'password');

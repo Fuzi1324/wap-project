@@ -58,7 +58,6 @@ export default function RegistrationPage() {
                 body: JSON.stringify({ email }),
             });
             
-            const data = await response.json();
             return response.status === 409;
         } catch (error) {
             console.error('Error checking email:', error);

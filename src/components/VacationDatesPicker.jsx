@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import PropTypes from 'prop-types';
 import { DatePicker, Button, message, Space, List, Typography } from 'antd';
 import dayjs from 'dayjs';
 import 'dayjs/locale/de';
@@ -16,6 +17,13 @@ const VacationDatesPicker = ({ initialVacationPeriods = [], onSave, maxVacationD
       endDate: dayjs(period.endDate)
     }))
   );
+
+  VacationDatesPicker.prototypes = {
+    initialVacationPeriods: PropTypes.array,
+    onSave: PropTypes.func.isRequired,
+    maxVacationDays: PropTypes.number
+  };
+
   const [currentSelection, setCurrentSelection] = useState(null);
 
   const calculateTotalVacationDays = (periods) => {
@@ -62,7 +70,6 @@ const VacationDatesPicker = ({ initialVacationPeriods = [], onSave, maxVacationD
     setVacationPeriods(updatedVacations);
     setCurrentSelection(null);
 
-    // Save logic
     try {
       const formattedVacations = updatedVacations.map(period => ({
         startDate: period.startDate.format('YYYY-MM-DD'),
@@ -84,7 +91,6 @@ const VacationDatesPicker = ({ initialVacationPeriods = [], onSave, maxVacationD
 
     setVacationPeriods(updatedVacations);
 
-    // Save updated data to database
     try {
       const formattedVacations = updatedVacations.map(period => ({
         startDate: period.startDate.format('YYYY-MM-DD'),
@@ -146,7 +152,7 @@ const VacationDatesPicker = ({ initialVacationPeriods = [], onSave, maxVacationD
           renderItem={(period, index) => (
             <List.Item
               actions={[
-                <Button type="link" danger onClick={() => handleRemoveVacation(index)}>
+                <Button key="remove" type="link" danger onClick={() => handleRemoveVacation(index)}>
                   Entfernen
                 </Button>
               ]}
