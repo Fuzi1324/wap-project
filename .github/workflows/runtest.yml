@@ -6,7 +6,7 @@ on:
       - 'release'
       - 'hotfix'
       - 'develop'
-  workflow_dispatch: # Ermöglicht manuelles Auslösen
+  workflow_dispatch:
 
 jobs:
   test:
