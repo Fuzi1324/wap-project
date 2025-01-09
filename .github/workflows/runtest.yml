@@ -6,6 +6,7 @@ on:
       - release/*
       - hotfix/*
       - develop/*
+  workflow_dispatch: # Ermöglicht manuelles Auslösen
 
 jobs:
   test:
