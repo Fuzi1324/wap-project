@@ -17,6 +17,45 @@ export default function UserPage() {
   const [joinOrgForm] = Form.useForm();
   const [adminName, setAdminName] = useState('');
 
+  const fetchOrgData = async () => {
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error('Not logged in');
+        navigate('/login');
+        return;
+      }
+  
+      const response = await fetch('/api/user/organization', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+  
+      if (response.ok) {
+        const data = await response.json();
+        setOrgData(data);
+        
+        const adminResponse = await fetch('/api/user/organization-admin', {
+          headers: {  
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
+  
+        if(adminResponse.ok){
+          const adminData = await adminResponse.json();
+          setAdminName(adminData.name);
+        }
+      } else if (response.status === 404) {
+        setOrgData(null);
+        setAdminName('');
+      }
+    } catch (error) {
+      console.error('Error fetching organisation data:', error);
+      message.error('Error fetching organisation data');
+    }
+  };
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -42,21 +81,6 @@ export default function UserPage() {
         } else {
           message.error('Failed to fetch user data');
         }
-
-        const adminResponse = await fetch('/api/user/organization-admin', {
-          headers: {  
-            'Authorization': `Bearer ${accessToken}`
-          }
-        });
-
-        if(adminResponse.ok){
-          const adminData =  await adminResponse.json();
-          setAdminName(adminData.name);
-        }else if (adminResponse.status === 404) {
-          message.info('Sie haben noch keine Organisation erstellt oder sind noch keiner Organisation beigetreten!');
-        }else {
-          message.error('Failed to fetch admin name');
-        }
       } catch (error) {
         console.error('Error fetching user data:', error);
         message.error('Error fetching user data');
@@ -66,39 +90,13 @@ export default function UserPage() {
   }, [navigate]);
 
   useEffect(() => {
-    const fetchOrgData = async () => {
-      try {
-        const accessToken = localStorage.getItem('accessToken');
-        if (!accessToken) {
-          message.error('Not logged in');
-          navigate('/login');
-          return;
-        }
-
-        const response = await fetch('/api/user/organization', {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setOrgData(data);
-        } else if (response.status === 404) {
-          message.error('Organisation not found');
-        } else {
-          message.error('Failed to fetch organisation data');
-        }
-      } catch (error) {
-        console.error('Error fetching organisation data:', error);
-        message.error('Error fetching organisation data');
-      }
-    };
-
-    if(userData?.organisation){
-      fetchOrgData(); 
+    if (userData?.organisation) {
+      fetchOrgData();
+    } else {
+      setOrgData(null);
+      setAdminName('');
     }
-  }, [userData]);
+  }, [userData?.organisation]);
 
   const handleSaveVacationDates = async (vacationPeriods) => {
     try {
@@ -136,57 +134,12 @@ export default function UserPage() {
     }
   };
 
-const handleDeleteOrganisation = async () => {
-  try {
-    const accessToken = localStorage.getItem('accessToken');
-    if (!accessToken) {
-      message.error('Nicht eingeloggt');
-      navigate('/user:id');
-      return;
-    }
-
-    const response = await fetch(`/api/user/${userData._id}/organisation`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      const errorMessage = errorData?.message || `HTTP error! status: ${response.status}`;
-      message.error(errorMessage);
-      throw new Error(errorMessage);
-    }
-
-    message.success('Organisation erfolgreich gelöscht!');
-    
-    // Lade die aktualisierten Benutzerdaten neu
-    const userResponse = await fetch('/api/user/me', {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
-    });
-
-    if (userResponse.ok) {
-      const updatedUserData = await userResponse.json();
-      setUserData(updatedUserData);
-    } else {
-      message.error('Fehler beim Aktualisieren der Benutzerdaten');
-    }
-
-  } catch (error) {
-    console.error('Error deleting organisation:', error);
-    message.error('Fehler beim Löschen der Organisation: ' + error.message);
-  }
-};
-
   const handleCreateOrganisation = async (values) => {
     const generateToken = (length) => {
       const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
       let result = '';
       for (let i = 0; i < length; i++) {
-          result += characters.charAt(Math.floor(Math.random() * characters.length));
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
       }
       return result;
     };
@@ -224,12 +177,14 @@ const handleDeleteOrganisation = async () => {
       const data = await response.json();
       message.success('Organisation erfolgreich erstellt!');
       
+      createOrgForm.resetFields();
+      
       setUserData(prev => ({
         ...prev,
-        organisation: data.organisationId
+        organisation: data.organisationId,
+        token: data.organization.token
       }));
 
-      createOrgForm.resetFields();
     } catch (error) {
       console.error('Error creating organisation:', error);
       message.error('Fehler beim Erstellen der Organisation: ' + error.message);
@@ -265,18 +220,48 @@ const handleDeleteOrganisation = async () => {
 
       const data = await response.json();
       message.success('Organisation erfolgreich beigetreten!');
+      
+      joinOrgForm.resetFields();
+      
       setUserData(prev => ({
         ...prev,
         organisation: data.organisationId
       }));
 
-      joinOrgForm.resetFields();
+      await fetchOrgData();
     } catch (error) {
       console.error('Error joining organisation:', error);
       message.error('Fehler beim Beitritt zur Organisation: ' + error.message);
     }
   };
 
+  const handleDeleteOrganisation = async () => {
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        message.error('Nicht eingeloggt');
+        navigate('/user:id');
+        return;
+      }
+  
+      const response = await fetch(`/api/user/${userData._id}/organisation`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        },
+      });
+  
+      if (!response.ok) throw new Error(await response.text());
+  
+      message.success('Organisation erfolgreich gelöscht!');
+      setUserData(prev => ({ ...prev, organisation: null, role: 'user' }));
+      setOrgData(null);
+      setAdminName('');
+    } catch (error) {
+      console.error('Error deleting organisation:', error);
+      message.error('Fehler beim Löschen der Organisation: ' + error.message);
+    }
+  };
 
   if (!userData) {
     return (
