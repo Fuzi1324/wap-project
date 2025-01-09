@@ -26,18 +26,22 @@ router.post('/login', (req, res) => {
 
 router.post('/check-email', async (req, res) => {
   try {
-    const db = req.app.get('db');
-    const { email } = req.body;
+      const db = req.app.get('db');
+      const { email } = req.body;
 
-    const existingUser = await db.collection('user_auth').findOne({ username: email });
+      if (!email) {
+          return res.status(400).json({ message: 'E-Mail ist erforderlich' });
+      }
 
-    if (existingUser) {
-      res.status(409).json({ message: 'E-Mail-Adresse bereits vergeben' });
-    } else {
-      res.status(200).json({ message: 'E-Mail-Adresse ist verfügbar' });
-    }
+      const existingUser = await db.collection('user_auth').findOne({ username: email });
+      
+      if (existingUser) {
+          res.status(409).json({ message: 'E-Mail-Adresse bereits vergeben' });
+      } else {
+          res.status(200).json({ message: 'E-Mail-Adresse ist verfügbar' });
+      }
   } catch (error) {
-    res.status(500).json({ message: 'Interner Serverfehler' });
+      res.status(500).json({ message: 'Interner Serverfehler' });
   }
 });
 
