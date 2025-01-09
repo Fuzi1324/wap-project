@@ -1,6 +1,10 @@
 name: Run Unit Tests
 on:
   pull_request:
+    branches:
+      - 'release'
+      - 'hotfix'
+      - 'develop'
   push:
     branches:
       - 'release'
