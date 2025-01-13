@@ -5,6 +5,7 @@ import 'dotenv/config';
 import api from './api.js';
 import register from './register.js';
 import oAuthModel from './oAuthModel.js';
+import process from 'process';
 
 const app = express();
 const port = 3000;
