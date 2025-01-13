@@ -1,0 +1,185 @@
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+    padding: 20px;
+  }
+  
+ .auth-card {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 600px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+  .auth-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  }
+  
+  .auth-card_wide {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 1200px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+  .auth-card_wide:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  }
+  
+  .auth-title {
+    margin-bottom: 10px !important;
+    color: #1890ff !important;
+  }
+  
+  .auth-form {
+    width: 100%;
+  }
+  
+  .auth-form .ant-form-item {
+    margin-bottom: 20px;
+  }
+  
+  .auth-button {
+    width: 100%;
+    height: 40px !important;
+    font-size: 16px !important;
+  }
+  
+  .auth-links {
+    margin-top: 20px;
+    text-align: center;
+  }
+  
+  .auth-links a {
+    color: #1890ff;
+    text-decoration: none;
+  }
+  
+  .auth-links a:hover {
+    text-decoration: underline;
+  }
+
+  .ant-layout{
+    background: rgb(255, 255, 255)
+  }
+
+
+/* Component Styles */
+.employee-list {
+    margin: 20px 0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .employee-list .ant-table {
+    background: white;
+    border-radius: 8px;
+  }
+  
+  .schedule-display {
+    padding: 24px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .general-config {
+    padding: 24px;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .navigation {
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  
+  .auth-form {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  /* Common styles */
+  .section-title {
+    margin-bottom: 24px;
+    color: #1890ff;
+  }
+  
+  .card-container {
+    background: white;
+    padding: 24px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 24px;
+  }
+  
+  .button-group {
+    display: flex;
+    gap: 12px;
+    margin: 16px 0;
+  }
+
+  .token-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+    justify-content: center; 
+  }
+  
+  .copy-button {
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .copy-button:hover {
+    background-color: #f3f4f6;
+  }
+  
+  .copy-icon {
+    color: #6b7280;
+    width: 20px;
+    height: 20px;
+  }
+  
+  .copy-button:hover .copy-icon {
+    color: #374151;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .auth-form {
+      padding: 16px;
+    }
+    
+    .card-container {
+      padding: 16px;
+    }
+    
+    .button-group {
+      flex-direction: column;
+    }
+  }

@@ -1,0 +1,110 @@
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import Navigation from '../components/Navigation';
+import { Layout, Form, Input, Button, Typography, message } from 'antd';
+import './AuthPages.css';
+
+const { Content } = Layout;
+const { Title } = Typography;
+
+export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const navigate = useNavigate();
+
+  const handleSubmit = async () => {
+    try {
+      const formData = new URLSearchParams();
+      formData.append('grant_type', 'password');
+      formData.append('username', email);
+      formData.append('password', password);
+      formData.append('client_id', 'client');
+
+      const response = await fetch('/api/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        localStorage.setItem('accessToken', data.access_token);
+        localStorage.setItem('refreshToken', data.refresh_token);
+        message.success('Login successful');
+        
+        const userResponse = await fetch('/api/user/me', {
+          headers: {
+            'Authorization': `Bearer ${data.access_token}`
+          }
+        });
+        
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          navigate(`/user/${userData._id}`);
+        } else {
+          navigate('/');
+        }
+      } else {
+        message.error(data.message || 'Login failed');
+      }
+    } catch (error) {
+      console.error(error);
+      message.error('Login failed');
+    }
+  };
+
+  return (
+    <Layout>
+      <Navigation />
+      <Content style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <div className="auth-container">
+          <div className="auth-card">
+            <Title level={2} className="auth-title">Login</Title>
+            <Form
+              name="login"
+              className="auth-form"
+              onFinish={handleSubmit}
+            >
+              <Form.Item
+                name="email"
+                rules={[{ required: true, message: 'Please input your email!' }]}
+              >
+                <Input 
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="password"
+                rules={[{ required: true, message: 'Please input your password!' }]}
+              >
+                <Input.Password 
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </Form.Item>
+
+              <Form.Item>
+                <Button type="primary" htmlType="submit" className="auth-button">
+                  Login
+                </Button>
+              </Form.Item>
+            </Form>
+
+            <Form.Item>
+              <p style={{ textAlign: 'center' }}>
+                Noch nicht registriert? <Link to="/register">Registrieren</Link>
+              </p>
+            </Form.Item>
+          </div>
+        </div>
+      </Content>
+    </Layout>
+  );
+}
