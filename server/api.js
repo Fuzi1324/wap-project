@@ -1,6 +1,6 @@
 import express from 'express';
 import { ObjectId } from 'mongodb';
-import dayjs from 'dayjs'; // Import dayjs library
+import dayjs from 'dayjs';
 
 const router = express.Router();
 
@@ -20,7 +20,6 @@ async function isAdminMiddleware(req, res, next) {
 // ************** AUTH ROUTES **************
 
 router.post('/login', (req, res) => {
-  const { email, password } = req.body;
   res.json({ message: 'Loginversuch empfangen', status: 'success' });
 });
 
@@ -41,7 +40,7 @@ router.post('/check-email', async (req, res) => {
           res.status(200).json({ message: 'E-Mail-Adresse ist verfügbar' });
       }
   } catch (error) {
-      res.status(500).json({ message: 'Interner Serverfehler' });
+      res.status(500).json({ message: 'Interner Serverfehler: ' + error });
   }
 });
 
@@ -66,7 +65,7 @@ router.get('/organization/users', isAdminMiddleware, async (req, res) => {
 
     res.json(users);
   } catch (error) {
-    res.status(500).json({ message: 'Interner Serverfehler' });
+    res.status(500).json({ message: 'Interner Serverfehler: ' + error });
   }
 });
 
@@ -96,7 +95,7 @@ router.get('/user/me', async (req, res) => {
 
     res.json(userData);
   } catch (error) {
-    res.status(500).json({ message: 'Interner Serverfehler' });
+    res.status(500).json({ message: 'Interner Serverfehler: ' + error });
   }
 });
 
@@ -210,7 +209,7 @@ router.post('/generate-schedule', isAdminMiddleware, async (req, res) => {
       scheduleId: result.insertedId 
     });
   } catch (error) {
-    res.status(500).json({ error: 'Fehler bei der Dienstplangenerierung' });
+    res.status(500).json({ error: 'Fehler bei der Dienstplangenerierung: ' + error });
   }
 });
 
@@ -233,7 +232,7 @@ router.put('/user/:id/weeklyHours', isAdminMiddleware, async (req, res) => {
       res.status(404).json({ error: 'Benutzer nicht gefunden' });
     }
   } catch (error) {
-    res.status(500).json({ error: 'Fehler beim Aktualisieren der Wochenstunden' });
+    res.status(500).json({ error: 'Fehler beim Aktualisieren der Wochenstunden: ' + error });
   }
 });
 
@@ -258,7 +257,7 @@ router.put('/user/:id/vacation-periods', async (req, res) => {
       res.status(404).json({ error: 'Benutzer nicht gefunden' });
     }
   } catch (error) {
-    res.status(500).json({ message: 'Interner Serverfehler' });
+    res.status(500).json({ message: 'Interner Serverfehler: ' + error });
   }
 });
 
@@ -277,7 +276,7 @@ router.delete('/user/:id/vacation-periods', async (req, res) => {
       res.status(404).json({ error: 'Benutzer nicht gefunden' });
     }
   } catch (error) {
-    res.status(500).json({ message: 'Interner Serverfehler' });
+    res.status(500).json({ message: 'Interner Serverfehler: ' + error });
   }
 });
 
@@ -296,7 +295,7 @@ router.put('/user/:id/vacation-days', isAdminMiddleware, async (req, res) => {
       res.status(404).json({ error: 'Benutzer nicht gefunden' });
     }
   } catch (error) {
-    res.status(500).json({ error: 'Fehler beim Aktualisieren der Urlaubstage' });
+    res.status(500).json({ error: 'Fehler beim Aktualisieren der Urlaubstage ' + error });
   }
 });
 
@@ -333,7 +332,7 @@ router.get('/user/organization', async (req, res) => {
 
     res.json(orgData);
   } catch (error) {
-    res.status(500).json({ message: 'Interner Serverfehler' });
+    res.status(500).json({ message: 'Interner Serverfehler: ' + error });
   }
 });
 
@@ -366,7 +365,7 @@ router.get('/user/organization-admin', async (req, res) => {
 
     res.json(admin);
   } catch (error) {
-    res.status(500).json({ message: 'Interner Serverfehler' });
+    res.status(500).json({ message: 'Interner Serverfehler: ' + error });
   }
 })
 
@@ -437,7 +436,7 @@ router.put('/user/:id/join-organisation', async (req, res) => {
         organization: organisation
       });
   } catch (error) {
-    res.status(500).json({ message: 'Interner Serverfehler' });
+    res.status(500).json({ message: 'Interner Serverfehler: ' + error });
   }
 });
 
@@ -479,7 +478,7 @@ router.put('/user/:id/create-organisation', async (req, res) => {
       res.status(404).json({ error: 'Benutzer nicht gefunden' });
     }
   } catch (error) {
-    res.status(500).json({ message: 'Interner Serverfehler' });
+    res.status(500).json({ message: 'Interner Serverfehler: ' + error });
   }
 });
 
@@ -513,7 +512,7 @@ router.put('/organization/:id/work-config', isAdminMiddleware, async (req, res) 
       res.status(404).json({ error: 'Organisation nicht gefunden' });
     }
   } catch (error) {
-    res.status(500).json({ message: 'Interner Serverfehler' });
+    res.status(500).json({ message: 'Interner Serverfehler: ' + error });
   }
 });
 
@@ -554,7 +553,7 @@ router.post('/organization/:id/monthly-adjustment', isAdminMiddleware, async (re
 
     res.status(200).json({ message: 'Monatliche Anpassung erfolgreich gespeichert' });
   } catch (error) {
-    res.status(500).json({ message: 'Interner Serverfehler' });
+    res.status(500).json({ message: 'Interner Serverfehler: ' + error });
   }
 });
 
@@ -585,7 +584,7 @@ router.get('/organization/:id/monthly-adjustment/:month', isAdminMiddleware, asy
       });
     }
   } catch (error) {
-    res.status(500).json({ message: 'Interner Serverfehler' });
+    res.status(500).json({ message: 'Interner Serverfehler: ' + error });
   }
 });
 
@@ -602,7 +601,7 @@ router.get('/organization/:id/schedules', async (req, res) => {
     
     res.json(schedules);
   } catch (error) {
-    res.status(500).json({ message: 'Interner Serverfehler' });
+    res.status(500).json({ message: 'Interner Serverfehler: ' + error });
   }
 });
 
@@ -611,12 +610,6 @@ router.get('/organization/:id/schedules', async (req, res) => {
 router.use((req, res) => {
   res.status(404).send('404: Seite nicht gefunden');
 });
-
-function calculateHours(startTime, endTime) {
-  const [startHour, startMinute] = startTime.split(':').map(Number);
-  const [endHour, endMinute] = endTime.split(':').map(Number);
-  return (endHour + endMinute/60) - (startHour + startMinute/60);
-}
 
 function calculateAdjustedWorkTime(startTime, endTime, targetHours) {
   const start = dayjs(`2000-01-01 ${startTime}`);
