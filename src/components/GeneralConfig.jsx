@@ -113,7 +113,7 @@ function GeneralConfig({ workStartTime, setWorkStartTime, workEndTime, setWorkEn
     };
     
     loadOrganization();
-  }, []);
+  },);
 
   const fetchMonthlyAdjustment = async (month) => {
     try {
@@ -146,7 +146,7 @@ function GeneralConfig({ workStartTime, setWorkStartTime, workEndTime, setWorkEn
 
     try {
       const adjustmentToSave = Array.from(adjustmentData.entries())
-        .filter(([_, times]) => !times.isDefault)
+        .filter(([times]) => !times.isDefault)
         .map(([date, times]) => ({
           date,
           startTime: times.start?.format('HH:mm'),
