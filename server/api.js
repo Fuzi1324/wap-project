@@ -116,8 +116,29 @@ router.post('/generate-schedule', isAdminMiddleware, async (req, res) => {
       { _id: new ObjectId(user.organisation) }
     );
     
-    if (!organisation || !organisation.default_config) {
+    if (!organisation) {
       return res.status(400).json({ error: 'Keine Organisationskonfiguration gefunden' });
+    }
+
+    if (!organisation.default_config) {
+      await db.collection('organisation').updateOne(
+        { _id: new ObjectId(user.organisation) },
+        {
+          $set: {
+            default_config: {
+              workStartTime: '09:00',
+              workEndTime: '17:00',
+              workDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+            }
+          }
+        }
+      );
+      
+      organisation.default_config = {
+        workStartTime: '09:00',
+        workEndTime: '17:00',
+        workDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+      };
     }
 
     const monthlyAdjustment = organisation.monthly_adjustments?.find(
