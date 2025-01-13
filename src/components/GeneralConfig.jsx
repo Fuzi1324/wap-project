@@ -113,7 +113,7 @@ function GeneralConfig({ workStartTime, setWorkStartTime, workEndTime, setWorkEn
     };
     
     loadOrganization();
-  },);
+  },[]);
 
   const fetchMonthlyAdjustment = async (month) => {
     try {
