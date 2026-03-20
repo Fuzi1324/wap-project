@@ -126,15 +126,16 @@ describe('GET /user/me', () => {
 
     test('sollte 500 bei Datenbankfehler zurückgeben', async () => {
         ObjectId.isValid.mockReturnValue(true);
+        const mockError = new Error('DB Fehler');
         mockDb.collection
-            .mockReturnValueOnce({ findOne: jest.fn().mockRejectedValue(new Error('DB Fehler')) });
+            .mockReturnValueOnce({ findOne: jest.fn().mockRejectedValue(mockError) });
 
         const response = await request(app)
             .get('/user/me');
 
         expect(response.status).toBe(500);
         expect(response.body).toEqual({
-            message: 'Interner Serverfehler'
+            message: 'Interner Serverfehler: Error: DB Fehler'
         });
     });
 });

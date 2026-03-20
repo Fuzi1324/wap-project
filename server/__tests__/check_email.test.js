@@ -66,7 +66,8 @@ describe('POST /check-email', () => {
     });
 
     test('sollte 500 zurückgeben bei Datenbankfehler', async () => {
-        mockCollection.findOne.mockRejectedValue(new Error('DB Fehler'));
+        const mockError = new Error('DB Fehler');
+        mockCollection.findOne.mockRejectedValue(mockError);
 
         const response = await request(app)
             .post('/check-email')
@@ -74,7 +75,7 @@ describe('POST /check-email', () => {
 
         expect(response.status).toBe(500);
         expect(response.body).toEqual({
-            message: 'Interner Serverfehler'
+            message: 'Interner Serverfehler: Error: DB Fehler'
         });
     });
 });
