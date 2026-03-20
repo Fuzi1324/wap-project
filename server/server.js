@@ -9,7 +9,7 @@ import process from 'process';
 
 const app = express();
 const port = 3000;
-const connectionString = process.env.DB_CONNECTION_STRING;
+const connectionString = process.env.DB_CONNECTION_STRING?.trim();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -21,6 +21,10 @@ app.use((req, res, next) => {
 
 async function startServer() {
     try {
+        if (!connectionString) {
+            throw new Error('DB_CONNECTION_STRING fehlt oder ist leer. Erwartetes Format in .env: DB_CONNECTION_STRING=mongodb+srv://...');
+        }
+
         const client = new MongoClient(connectionString);
         await client.connect();
 
